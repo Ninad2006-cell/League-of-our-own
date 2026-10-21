@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
   Trophy,
@@ -8,7 +8,6 @@ import {
   MapPin,
   Plus,
   Search,
-  Filter,
   Eye,
   Edit2,
   Trash2,
@@ -20,15 +19,13 @@ import {
   ArrowRight,
   TrendingUp,
   X,
-  Shield,
-  Layers,
   ChevronRight,
   ChevronLeft
 } from 'lucide-react';
 
 import Sidebar from '../components/Sidebar';
 import TopHeader from '../components/TopHeader';
-import { TeamLogo, RangersLogo, StrikersLogo, WarriorsLogo, KingsLogo, CDMSLogo } from '../components/TeamLogos';
+import { TeamLogo } from '../components/TeamLogos';
 
 import batsmanStadiumImg from '../assets/images/batsman-stadium.jpg';
 import stadiumTrophyImg from '../assets/images/stadium-trophy.png';
@@ -200,7 +197,6 @@ export default function AdminDashboard() {
   const [tournamentFilter, setTournamentFilter] = useState('All');
   const [tournamentSearch, setTournamentSearch] = useState('');
   const [teamSearch, setTeamSearch] = useState('');
-  const [matchSearch, setMatchSearch] = useState('');
 
   // Modals state
   const [createTournamentModal, setCreateTournamentModal] = useState(false);
@@ -405,96 +401,97 @@ export default function AdminDashboard() {
           {/* ========================================================================= */}
           {(activeTab === 'overview' || activeTab === 'dashboard') && (
             <div className="space-y-6">
-              {/* Hero Banner with batsman-stadium.jpg */}
+              {/* Full Expanded Hero Banner with batsman-stadium.jpg & embedded Metric Cards */}
               <div
-                className="relative rounded-3xl overflow-hidden shadow-sm border border-slate-200/80 p-6 sm:p-8 text-slate-900"
+                className="relative rounded-3xl overflow-hidden shadow-sm border border-slate-200/80 p-6 sm:p-8 flex flex-col justify-between"
                 style={{
-                  backgroundImage: `linear-gradient(90deg, #FFFFFF 0%, #FFFFFF 42%, rgba(255, 255, 255, 0.85) 60%, rgba(255, 255, 255, 0.15) 100%), url(${batsmanStadiumImg})`,
+                  backgroundImage: `linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.85) 20%, rgba(255, 255, 255, 0.35) 45%, rgba(255, 255, 255, 0) 70%), url(${batsmanStadiumImg})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'right center',
-                  minHeight: '180px'
+                  minHeight: '320px'
                 }}
               >
-                <div className="relative z-10 max-w-xl">
-                  <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                {/* Header text on left with soft glow backing */}
+                <div className="relative z-10 max-w-lg mb-8">
+                  <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight drop-shadow-sm">
                     Dashboard
                   </h1>
-                  <p className="text-slate-600 text-sm sm:text-base mt-1 font-medium">
-                    Welcome back, Admin! Real-time match data & governance console.
+                  <p className="text-slate-700 text-sm sm:text-base mt-1 font-semibold">
+                    Welcome back, Admin!
                   </p>
                 </div>
+
+                {/* 4 Metric Cards Embedded on Banner (Image 6) */}
+                <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div
+                    onClick={() => handleTabChange('tournaments')}
+                    className="bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center p-2.5">
+                      <Trophy className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500">Tournaments</div>
+                      <div className="text-3xl font-black text-slate-900">{tournaments.length}</div>
+                      <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" /> Active Tournaments
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => handleTabChange('teams')}
+                    className="bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center p-2.5">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500">Teams</div>
+                      <div className="text-3xl font-black text-slate-900">{teams.length}</div>
+                      <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                        <Users className="w-3 h-3 text-blue-500" /> Registered Teams
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => handleTabChange('teams')}
+                    className="bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer hover:border-purple-300 hover:shadow-md transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center p-2.5">
+                      <User className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500">Players</div>
+                      <div className="text-3xl font-black text-slate-900">
+                        {teams.reduce((acc, t) => acc + (t.playersCount || 0), 0)}
+                      </div>
+                      <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                        <User className="w-3 h-3 text-purple-500" /> Registered Players
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => handleTabChange('matches')}
+                    className="bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer hover:border-rose-300 hover:shadow-md transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center p-2.5">
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500">Matches</div>
+                      <div className="text-3xl font-black text-slate-900">28</div>
+                      <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-rose-500" /> Scheduled Matches
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* 4 Metric Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                <div
-                  onClick={() => handleTabChange('tournaments')}
-                  className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer hover:border-emerald-200 hover:shadow-md transition-all group"
-                >
-                  <div className="w-13 h-13 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center p-3">
-                    <Trophy className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-slate-500">Tournaments</div>
-                    <div className="text-3xl font-black text-slate-900 mt-0.5">{tournaments.length}</div>
-                    <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 mt-0.5">
-                      <TrendingUp className="w-3 h-3" /> Active Tournaments
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => handleTabChange('teams')}
-                  className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer hover:border-blue-200 hover:shadow-md transition-all group"
-                >
-                  <div className="w-13 h-13 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center p-3">
-                    <Users className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-slate-500">Teams</div>
-                    <div className="text-3xl font-black text-slate-900 mt-0.5">{teams.length}</div>
-                    <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 mt-0.5">
-                      <Users className="w-3 h-3 text-blue-500" /> Registered Teams
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => handleTabChange('teams')}
-                  className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer hover:border-purple-200 hover:shadow-md transition-all group"
-                >
-                  <div className="w-13 h-13 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center p-3">
-                    <User className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-slate-500">Players</div>
-                    <div className="text-3xl font-black text-slate-900 mt-0.5">
-                      {teams.reduce((acc, t) => acc + (t.playersCount || 0), 0)}
-                    </div>
-                    <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 mt-0.5">
-                      <User className="w-3 h-3 text-purple-500" /> Registered Squad
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => handleTabChange('matches')}
-                  className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 cursor-pointer hover:border-rose-200 hover:shadow-md transition-all group"
-                >
-                  <div className="w-13 h-13 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center p-3">
-                    <Calendar className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-slate-500">Matches</div>
-                    <div className="text-3xl font-black text-slate-900 mt-0.5">28</div>
-                    <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 mt-0.5">
-                      <Calendar className="w-3 h-3 text-rose-500" /> Scheduled Matches
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Two Column Grid */}
+              {/* Two Column Grid: Upcoming Matches & Recent Activity */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Upcoming Matches */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
@@ -694,9 +691,7 @@ export default function AdminDashboard() {
                   <div className="py-6 flex flex-col items-center justify-center">
                     <div className="relative w-36 h-36 flex items-center justify-center">
                       <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                        {/* Background track */}
                         <circle cx="50" cy="50" r="38" fill="transparent" stroke="#E2E8F0" strokeWidth="12" />
-                        {/* Completed (18/28 ~ 64%) */}
                         <circle
                           cx="50"
                           cy="50"
@@ -708,7 +703,6 @@ export default function AdminDashboard() {
                           strokeDashoffset="85"
                           strokeLinecap="round"
                         />
-                        {/* Upcoming (8/28 ~ 28%) */}
                         <circle
                           cx="50"
                           cy="50"
@@ -756,81 +750,84 @@ export default function AdminDashboard() {
           {/* ========================================================================= */}
           {activeTab === 'tournaments' && (
             <div className="space-y-6">
-              {/* Header Hero Banner with stadium-trophy.png */}
+              {/* Full Expanded Hero Banner with stadium-trophy.png & embedded 4 Stat Cards */}
               <div
-                className="relative rounded-3xl overflow-hidden shadow-sm border border-slate-200/80 p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+                className="relative rounded-3xl overflow-hidden shadow-sm border border-slate-200/80 p-6 sm:p-8 flex flex-col justify-between"
                 style={{
-                  backgroundImage: `linear-gradient(90deg, #FFFFFF 0%, #FFFFFF 40%, rgba(255, 255, 255, 0.88) 58%, rgba(255, 255, 255, 0.15) 100%), url(${stadiumTrophyImg})`,
+                  backgroundImage: `linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.85) 20%, rgba(255, 255, 255, 0.35) 45%, rgba(255, 255, 255, 0) 70%), url(${stadiumTrophyImg})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'right center',
-                  minHeight: '180px'
+                  minHeight: '320px'
                 }}
               >
-                <div className="relative z-10 max-w-xl">
-                  <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                    Tournaments
-                  </h1>
-                  <p className="text-slate-600 text-sm sm:text-base mt-1 font-medium">
-                    Manage cricket competitions, tier formats, schedules, and standings.
-                  </p>
+                {/* Header row with + Create Tournament Button (Image 4) */}
+                <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                  <div className="max-w-xl">
+                    <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight drop-shadow-sm">
+                      Tournaments
+                    </h1>
+                    <p className="text-slate-700 text-sm sm:text-base mt-1 font-semibold">
+                      Manage cricket competitions
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setCreateTournamentModal(true)}
+                    className="bg-[#00c261] hover:bg-[#00ad56] text-white font-bold py-3 px-6 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all flex items-center gap-2 flex-shrink-0"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span>Create Tournament</span>
+                  </button>
                 </div>
 
-                <button
-                  onClick={() => setCreateTournamentModal(true)}
-                  className="relative z-10 bg-[#00c261] hover:bg-[#00ad56] text-white font-bold py-3 px-6 rounded-2xl shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 flex-shrink-0"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>Create Tournament</span>
-                </button>
-              </div>
-
-              {/* 4 Stat Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <Trophy className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-black text-slate-900">{tournaments.length}</div>
-                    <div className="text-xs font-semibold text-slate-500">Total Tournaments</div>
-                    <div className="text-[10px] text-slate-400">All competitions</div>
-                  </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <Calendar className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-black text-slate-900">
-                      {tournaments.filter((t) => t.status === 'Upcoming').length}
+                {/* 4 Stat Cards Embedded on Banner (Image 4) */}
+                <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center p-2.5">
+                      <Trophy className="w-6 h-6" />
                     </div>
-                    <div className="text-xs font-semibold text-slate-500">Upcoming</div>
-                    <div className="text-[10px] text-slate-400">Scheduled to start</div>
-                  </div>
-                </div>
-
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <Play className="w-6 h-6 fill-emerald-600" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-black text-slate-900">
-                      {tournaments.filter((t) => t.status === 'Ongoing').length}
+                    <div>
+                      <div className="text-2xl font-black text-slate-900">{tournaments.length}</div>
+                      <div className="text-xs font-semibold text-slate-600">Total Tournaments</div>
+                      <div className="text-[10px] text-slate-400">All competitions</div>
                     </div>
-                    <div className="text-xs font-semibold text-slate-500">Ongoing</div>
-                    <div className="text-[10px] text-slate-400">Currently in progress</div>
                   </div>
-                </div>
 
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                    <Flag className="w-6 h-6" />
+                  <div className="bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center p-2.5">
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-900">
+                        {tournaments.filter((t) => t.status === 'Upcoming').length}
+                      </div>
+                      <div className="text-xs font-semibold text-slate-600">Upcoming</div>
+                      <div className="text-[10px] text-slate-400">Scheduled to start</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-2xl font-black text-slate-900">1</div>
-                    <div className="text-xs font-semibold text-slate-500">Completed</div>
-                    <div className="text-[10px] text-slate-400">Finished tournaments</div>
+
+                  <div className="bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center p-2.5">
+                      <Play className="w-6 h-6 fill-emerald-600" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-900">
+                        {tournaments.filter((t) => t.status === 'Ongoing').length}
+                      </div>
+                      <div className="text-xs font-semibold text-slate-600">Ongoing</div>
+                      <div className="text-[10px] text-slate-400">Currently in progress</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center p-2.5">
+                      <Flag className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-black text-slate-900">1</div>
+                      <div className="text-xs font-semibold text-slate-600">Completed</div>
+                      <div className="text-[10px] text-slate-400">Finished tournaments</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -984,29 +981,43 @@ export default function AdminDashboard() {
           {/* ========================================================================= */}
           {(activeTab === 'teams' || activeTab === 'players') && (
             <div className="space-y-6">
-              {/* Header Hero Banner with stadium-ball-sunset.png */}
+              {/* Header Hero Banner with stadium-ball-sunset.png (Image 5) */}
               <div
-                className="relative rounded-3xl overflow-hidden shadow-sm border border-slate-200/80 p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+                className="relative rounded-3xl overflow-hidden shadow-sm border border-slate-200/80 p-6 sm:p-8 flex flex-col justify-center"
                 style={{
-                  backgroundImage: `linear-gradient(90deg, #FFFFFF 0%, #FFFFFF 38%, rgba(255, 255, 255, 0.88) 56%, rgba(255, 255, 255, 0.15) 100%), url(${stadiumBallSunsetImg})`,
+                  backgroundImage: `linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.85) 20%, rgba(255, 255, 255, 0.35) 45%, rgba(255, 255, 255, 0) 70%), url(${stadiumBallSunsetImg})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'right center',
-                  minHeight: '180px'
+                  minHeight: '220px'
                 }}
               >
                 <div className="relative z-10 max-w-xl">
-                  <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                  <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight drop-shadow-sm">
                     Team Management
                   </h1>
-                  <p className="text-slate-600 text-sm sm:text-base mt-1 font-medium">
-                    Manage teams, view details, update coaching staff, and explore player squads.
+                  <p className="text-slate-700 text-sm sm:text-base mt-1.5 font-semibold">
+                    Manage teams, view details, update information and explore player squads.
                   </p>
                 </div>
+              </div>
 
-                <div className="relative z-10 flex items-center gap-3">
+              {/* Search & Actions Bar (Image 5) */}
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="relative w-full max-w-md">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search teams..."
+                    value={teamSearch}
+                    onChange={(e) => setTeamSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                   <button
                     onClick={() => setAddPlayerModal(true)}
-                    className="bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 font-bold py-3 px-5 rounded-2xl shadow-sm transition-all flex items-center gap-2"
+                    className="bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all flex items-center gap-2 text-xs"
                   >
                     <User className="w-4 h-4 text-emerald-600" />
                     <span>+ Add Player</span>
@@ -1014,28 +1025,11 @@ export default function AdminDashboard() {
 
                   <button
                     onClick={() => setAddTeamModal(true)}
-                    className="bg-[#00c261] hover:bg-[#00ad56] text-white font-bold py-3 px-6 rounded-2xl shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2"
+                    className="bg-[#00c261] hover:bg-[#00ad56] text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 text-xs"
                   >
-                    <Plus className="w-5 h-5" />
+                    <Plus className="w-4 h-4" />
                     <span>Add Team</span>
                   </button>
-                </div>
-              </div>
-
-              {/* Search Bar */}
-              <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-                <div className="relative w-full max-w-md">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search teams by name, city, or coach..."
-                    value={teamSearch}
-                    onChange={(e) => setTeamSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                  />
-                </div>
-                <div className="text-xs text-slate-500 font-semibold hidden sm:block">
-                  {filteredTeams.length} Registered Teams
                 </div>
               </div>
 
@@ -1048,7 +1042,6 @@ export default function AdminDashboard() {
                   >
                     {/* Team Crest Header Card with gradient backdrop */}
                     <div className="relative h-44 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center overflow-hidden">
-                      {/* Subtle background glow */}
                       <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px]" />
                       <div className="relative transform hover:scale-110 transition-transform duration-300">
                         <TeamLogo name={team.name} className="w-24 h-24" />
@@ -1122,17 +1115,17 @@ export default function AdminDashboard() {
               <div
                 className="relative rounded-3xl overflow-hidden shadow-sm border border-slate-200/80 p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
                 style={{
-                  backgroundImage: `linear-gradient(90deg, #FFFFFF 0%, #FFFFFF 38%, rgba(255, 255, 255, 0.88) 56%, rgba(255, 255, 255, 0.15) 100%), url(${stadiumBallDayImg})`,
+                  backgroundImage: `linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.85) 20%, rgba(255, 255, 255, 0.35) 45%, rgba(255, 255, 255, 0) 70%), url(${stadiumBallDayImg})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'right center',
-                  minHeight: '180px'
+                  minHeight: '220px'
                 }}
               >
                 <div className="relative z-10 max-w-xl">
-                  <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                  <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight drop-shadow-sm">
                     Venue & Match Scheduler
                   </h1>
-                  <p className="text-slate-600 text-sm sm:text-base mt-1 font-medium">
+                  <p className="text-slate-700 text-sm sm:text-base mt-1.5 font-semibold">
                     Schedule fixtures, book floodlit venues, allocate total overs, and assign official scorers.
                   </p>
                 </div>

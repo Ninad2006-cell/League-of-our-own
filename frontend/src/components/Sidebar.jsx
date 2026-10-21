@@ -50,27 +50,27 @@ export default function Sidebar({
         />
       )}
 
-      {/* Sidebar Container with Background Image */}
+      {/* Sidebar Container with prominent background image coverage */}
       <aside
         className={`fixed top-0 bottom-0 left-0 z-50 w-64 text-white flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{
-          backgroundImage: `linear-gradient(to bottom, rgba(5, 11, 28, 0.88), rgba(5, 11, 28, 0.94)), url(${sidebarBg})`,
+          backgroundImage: `linear-gradient(to bottom, rgba(6, 14, 36, 0.75) 0%, rgba(6, 14, 36, 0.45) 35%, rgba(6, 14, 36, 0.15) 65%, rgba(6, 14, 36, 0.40) 100%), url(${sidebarBg})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center bottom',
           backgroundRepeat: 'no-repeat',
         }}
       >
         {/* Brand Header */}
-        <div className="p-5 flex items-center justify-between border-b border-white/10">
+        <div className="p-5 flex items-center justify-between border-b border-white/10 bg-slate-950/40 backdrop-blur-sm">
           <Link to="/" className="flex items-center gap-3 group">
             <CDMSLogo className="w-10 h-10 group-hover:scale-105 transition-transform" />
             <div>
-              <div className="font-extrabold text-xl tracking-tight text-white flex items-center gap-1.5">
+              <div className="font-extrabold text-xl tracking-tight text-white flex items-center gap-1.5 drop-shadow">
                 CDMS
               </div>
-              <p className="text-[10px] tracking-wider uppercase text-slate-300 font-medium leading-none">
+              <p className="text-[10px] tracking-wider uppercase text-slate-200 font-medium leading-none drop-shadow">
                 Cricket Data Management System
               </p>
             </div>
@@ -78,7 +78,7 @@ export default function Sidebar({
           {onCloseMobile && (
             <button
               onClick={onCloseMobile}
-              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10"
+              className="lg:hidden p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10"
             >
               <X className="w-5 h-5" />
             </button>
@@ -110,11 +110,11 @@ export default function Sidebar({
                 onClick={handleClick}
                 className={`flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-[#00c261] text-white shadow-lg shadow-emerald-500/25 font-semibold'
-                    : 'text-slate-300 hover:text-white hover:bg-white/10'
+                    ? 'bg-[#00c261] text-white shadow-lg shadow-emerald-500/30 font-semibold'
+                    : 'text-slate-200 hover:text-white hover:bg-white/15 drop-shadow'
                 }`}
               >
-                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-white'}`} />
+                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-300 group-hover:text-white'}`} />
                 <span className="truncate">{item.label}</span>
                 {item.id === 'live-scoring' && (
                   <span className="ml-auto flex h-2 w-2 relative">
@@ -127,13 +127,13 @@ export default function Sidebar({
           })}
         </nav>
 
-        {/* Bottom subtle session indicator */}
-        <div className="p-4 border-t border-white/10 bg-black/20 text-xs text-slate-400 flex items-center justify-between">
+        {/* Bottom session indicator with transparent backdrop so batsman & pitch remain clearly visible */}
+        <div className="p-4 border-t border-white/15 bg-black/40 backdrop-blur-md text-xs text-slate-300 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>CDMS Live Engine v2.4</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="font-medium drop-shadow">CDMS Engine v2.4</span>
           </div>
-          <Link to="/" className="text-emerald-400 hover:underline">
+          <Link to="/" className="text-emerald-300 hover:text-emerald-200 hover:underline font-semibold drop-shadow">
             Home
           </Link>
         </div>
