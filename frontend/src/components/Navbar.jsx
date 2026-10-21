@@ -1,14 +1,36 @@
 import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { Search, User, Sun } from 'lucide-react';
 
 const Navbar = ({ isLoggedIn = false }) => {
+  const location = useLocation();
+
   const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'Tournaments', path: '/schedule-points' },
-    { name: 'Teams', path: '/schedule-points' },
-    { name: 'Players', path: '/player/1' },
-    { name: 'Live Scores', path: '/live-scorecard/1' },
+    { 
+      name: 'Home', 
+      path: '/',
+      isActive: location.pathname === '/' 
+    },
+    { 
+      name: 'Tournaments', 
+      path: '/tournaments',
+      isActive: location.pathname === '/tournaments' || location.pathname === '/schedule-points'
+    },
+    { 
+      name: 'Teams', 
+      path: '/teams',
+      isActive: location.pathname === '/teams'
+    },
+    { 
+      name: 'Players', 
+      path: '/players',
+      isActive: location.pathname.startsWith('/player')
+    },
+    { 
+      name: 'Live Scores', 
+      path: '/live-scores',
+      isActive: location.pathname.startsWith('/live-score') || location.pathname.startsWith('/live-scorecard')
+    },
   ];
 
   return (
@@ -31,19 +53,17 @@ const Navbar = ({ isLoggedIn = false }) => {
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center space-x-1 lg:space-x-2">
               {navItems.map((item) => (
-                <NavLink
+                <Link
                   key={item.name}
                   to={item.path}
-                  className={({ isActive }) =>
-                    `px-3.5 py-1.5 text-sm font-medium transition-colors relative ${
-                      isActive
-                        ? 'text-white font-semibold after:content-[""] after:absolute after:bottom-[-20px] after:left-3.5 after:right-3.5 after:h-0.5 after:bg-emerald-400'
-                        : 'text-slate-300 hover:text-white'
-                    }`
-                  }
+                  className={`px-3.5 py-1.5 text-sm font-medium transition-colors relative ${
+                    item.isActive
+                      ? 'text-white font-semibold after:content-[""] after:absolute after:bottom-[-20px] after:left-3.5 after:right-3.5 after:h-0.5 after:bg-emerald-400'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
                 >
                   {item.name}
-                </NavLink>
+                </Link>
               ))}
             </div>
           </div>
@@ -71,7 +91,7 @@ const Navbar = ({ isLoggedIn = false }) => {
 
             {/* Live Indicator Pill */}
             <Link 
-              to="/live-scorecard/1"
+              to="/live-scores"
               className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs font-semibold hover:border-emerald-500/60 transition-colors"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -101,17 +121,15 @@ const Navbar = ({ isLoggedIn = false }) => {
         {/* Mobile Navigation Row */}
         <div className="flex md:hidden items-center justify-around py-2.5 border-t border-slate-800/60 overflow-x-auto text-xs">
           {navItems.map((item) => (
-            <NavLink
+            <Link
               key={item.name}
               to={item.path}
-              className={({ isActive }) =>
-                `px-2 py-1 whitespace-nowrap ${
-                  isActive ? 'text-emerald-400 font-bold' : 'text-slate-300'
-                }`
-              }
+              className={`px-2 py-1 whitespace-nowrap ${
+                item.isActive ? 'text-emerald-400 font-bold' : 'text-slate-300'
+              }`}
             >
               {item.name}
-            </NavLink>
+            </Link>
           ))}
         </div>
       </div>

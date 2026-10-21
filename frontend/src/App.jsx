@@ -2,9 +2,12 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
-import LiveScorecard from './pages/LiveScorecard';
-import SchedulePoints from './pages/SchedulePoints';
+import LiveScores from './pages/LiveScores';
+import Tournaments from './pages/Tournaments';
+import Teams from './pages/Teams';
+import Players from './pages/Players';
 import PlayerProfile from './pages/PlayerProfile';
+import SchedulePoints from './pages/SchedulePoints';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import ScoringConsole from './pages/ScoringConsole';
@@ -20,15 +23,21 @@ function AppContent() {
     location.pathname === '/login';
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#eef2f6]">
       {!isDashboardOrAuth && <Navbar />}
       <main className="flex-grow">
         <Routes>
-          {/* Viewer Routes */}
+          {/* Main Viewer Navigation Pages */}
           <Route path="/" element={<Home />} />
-          <Route path="/live-scorecard/:matchId" element={<LiveScorecard />} />
-          <Route path="/schedule-points" element={<SchedulePoints />} />
+          <Route path="/live-scores" element={<LiveScores />} />
+          <Route path="/live-scorecard" element={<Navigate to="/live-scores" replace />} />
+          <Route path="/live-scorecard/:matchId" element={<LiveScores />} />
+
+          <Route path="/tournaments" element={<Tournaments />} />
+          <Route path="/teams" element={<Teams />} />
+          <Route path="/players" element={<Players />} />
           <Route path="/player/:playerId" element={<PlayerProfile />} />
+          <Route path="/schedule-points" element={<SchedulePoints />} />
 
           {/* Authentication */}
           <Route path="/login" element={<Login />} />

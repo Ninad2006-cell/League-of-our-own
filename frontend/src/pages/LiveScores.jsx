@@ -9,6 +9,7 @@ import {
   TrendingUp, 
   Target 
 } from 'lucide-react';
+import { RangersLogo, StrikersLogo } from '../components/TeamLogos';
 
 const LiveScores = () => {
   const [activeTab, setActiveTab] = useState('Live');
@@ -17,12 +18,25 @@ const LiveScores = () => {
 
   // Current over balls (16.3 over status)
   const currentOverBalls = [
-    { ball: '1', runs: '1', type: 'single', bg: 'bg-slate-100 text-slate-800' },
-    { ball: '2', runs: '4', type: 'four', bg: 'bg-emerald-100 text-emerald-700 font-bold' },
-    { ball: '3', runs: '0', type: 'dot', bg: 'bg-slate-100 text-slate-800' },
-    { ball: '4', runs: '1', type: 'single', bg: 'bg-slate-100 text-slate-800' },
-    { ball: '5', runs: '6', type: 'six', bg: 'bg-blue-100 text-blue-700 font-bold' },
-    { ball: '6', runs: '0', type: 'dot', bg: 'bg-slate-100 text-slate-800' },
+    { runs: '1', bg: 'bg-[#f0f4f8] text-slate-800' },
+    { runs: '4', bg: 'bg-[#86efac] text-emerald-950 font-bold' },
+    { runs: '0', bg: 'bg-[#f0f4f8] text-slate-800' },
+    { runs: '1', bg: 'bg-[#f0f4f8] text-slate-800' },
+    { runs: '6', bg: 'bg-[#93c5fd] text-blue-950 font-bold' },
+    { runs: '0', bg: 'bg-[#f0f4f8] text-slate-800' },
+  ];
+
+  // Batting data
+  const batters = [
+    { name: 'Arjun Sharma', isStriker: true, runs: 52, balls: 38, fours: 6, sixes: 2, sr: '136.8' },
+    { name: 'Rohit Verma', isStriker: false, runs: 34, balls: 28, fours: 4, sixes: 1, sr: '121.4' },
+    { name: 'Kunal Patel', isStriker: false, runs: 18, balls: 12, fours: 2, sixes: 1, sr: '150.0' },
+  ];
+
+  // Bowling data
+  const bowlers = [
+    { name: 'Sameer Khan', overs: '3.2', maidens: 0, runs: 28, wickets: 1, eco: '8.40' },
+    { name: 'Dev Malhotra', overs: '4.0', maidens: 0, runs: 24, wickets: 2, eco: '6.00' },
   ];
 
   // Commentary data
@@ -37,7 +51,7 @@ const LiveScores = () => {
     {
       over: '16.1',
       badge: '6',
-      badgeClass: 'bg-blue-500 text-white font-bold',
+      badgeClass: 'bg-[#2563eb] text-white font-bold',
       text: 'Sameer Khan to Arjun Sharma — SIX! Cracking shot over long on.',
       time: '3 mins ago',
     },
@@ -51,7 +65,7 @@ const LiveScores = () => {
     {
       over: '15.5',
       badge: '4',
-      badgeClass: 'bg-emerald-500 text-white font-bold',
+      badgeClass: 'bg-[#10b981] text-white font-bold',
       text: 'Dev Malhotra to Rohit Verma — FOUR! Beautifully timed through covers.',
       time: '6 mins ago',
     },
@@ -65,83 +79,73 @@ const LiveScores = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f3f6fb] pb-16">
+    <div className="min-h-screen bg-[#eef2f6] pb-16 font-sans">
       {/* Top Banner / Match Header */}
-      <div className="relative w-full bg-[#0a1224] text-white overflow-hidden shadow-md">
-        {/* Stadium background overlay */}
+      <div className="relative w-full h-[180px] sm:h-[200px] bg-[#070d1e] text-white overflow-hidden shadow-md flex items-center">
+        {/* Background Image: Stadium with floodlights */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-luminosity"
-          style={{ backgroundImage: `url('/home_page_background.jpeg')` }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url('/Live_Score_background.jpeg')` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#070c18] via-[#09162e]/90 to-[#0e1d3d]/80" />
+        {/* Dark gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#030712]/95 via-[#061129]/80 to-transparent" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex items-center justify-between">
           <div className="space-y-2 z-10">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white">
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white drop-shadow-md">
                 City Champions League
               </h1>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-bold uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#16a34a] text-white text-xs font-bold tracking-wider shadow">
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                 LIVE
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-slate-300 font-medium">
+            <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-slate-200 font-medium drop-shadow">
               <span className="inline-flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-slate-400" />
+                <MapPin className="w-4 h-4 text-slate-300" />
                 Greenfield Stadium, Mumbai
               </span>
-              <span className="text-slate-500">•</span>
+              <span className="text-slate-400">•</span>
               <span className="inline-flex items-center gap-1.5">
-                <Trophy className="w-4 h-4 text-amber-400" />
+                <Trophy className="w-4 h-4 text-slate-300" />
                 T20
               </span>
-            </div>
-          </div>
-
-          {/* Right Cricket Ball Graphic */}
-          <div className="hidden lg:flex items-center justify-center pr-4">
-            <div className="relative w-28 h-28 rounded-full shadow-2xl bg-gradient-to-tr from-red-900 via-rose-600 to-red-500 flex items-center justify-center ring-4 ring-rose-950/40">
-              <div className="w-full h-1 bg-white/70 rotate-45" />
-              <div className="absolute inset-0 rounded-full border-2 border-white/30 rotate-45" />
-              <div className="absolute top-2 right-4 w-6 h-6 rounded-full bg-white/30 blur-sm" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5 -mt-6">
         
         {/* Top Cards: Scorecard Summary & Match Info */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           
           {/* Main Teams Match Overview Card (Spans 2 cols) */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 flex flex-col justify-between">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 py-2">
+          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 flex flex-col justify-center">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
               
               {/* Team 1: Rangers */}
               <div className="flex items-center gap-4">
-                {/* Team Logo Badge */}
-                <div className="w-16 h-16 rounded-xl bg-slate-900 flex flex-col items-center justify-center p-2 text-white border-2 border-rose-500 shadow-sm shrink-0">
-                  <div className="text-[10px] uppercase font-black tracking-widest text-rose-500 leading-none">★ ★ ★</div>
-                  <div className="text-xs font-black tracking-tighter mt-1 text-white">RANGERS</div>
+                <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-sm flex items-center justify-center bg-slate-900 border border-slate-100">
+                  <RangersLogo size={76} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Rangers</h2>
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Rangers</h2>
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" />
                   </div>
                   <div className="flex items-baseline gap-2 mt-1">
-                    <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                    <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
                       128/4
                     </span>
-                    <span className="text-sm font-semibold text-slate-500">(16.2)</span>
+                    <span className="text-base font-semibold text-slate-500">(16.2)</span>
                   </div>
-                  <div className="flex items-center gap-3 text-xs sm:text-sm text-slate-500 font-medium mt-1">
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 font-medium mt-1">
                     <span>CRR: <strong className="text-slate-800">7.84</strong></span>
-                    <span>|</span>
+                    <span className="text-slate-300">|</span>
                     <span>Target: <strong className="text-slate-800">156</strong></span>
                   </div>
                 </div>
@@ -149,20 +153,18 @@ const LiveScores = () => {
 
               {/* VS Badge */}
               <div className="hidden sm:flex items-center justify-center">
-                <span className="px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs uppercase tracking-wider">
+                <span className="px-3.5 py-1.5 rounded-xl bg-[#f1f5f9] text-slate-700 font-extrabold text-xs uppercase tracking-wider">
                   VS
                 </span>
               </div>
 
               {/* Team 2: Strikers */}
               <div className="flex items-center sm:flex-row-reverse gap-4">
-                {/* Team Logo Badge */}
-                <div className="w-16 h-16 rounded-xl bg-slate-900 flex flex-col items-center justify-center p-2 text-white border-2 border-blue-500 shadow-sm shrink-0">
-                  <div className="text-[10px] uppercase font-black tracking-widest text-amber-400 leading-none">⚡ ⚡ ⚡</div>
-                  <div className="text-xs font-black tracking-tighter mt-1 text-blue-400">STRIKERS</div>
+                <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-sm flex items-center justify-center bg-slate-900 border border-slate-100">
+                  <StrikersLogo size={76} />
                 </div>
                 <div className="sm:text-right">
-                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Strikers</h2>
+                  <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Strikers</h2>
                   <p className="text-sm font-medium text-slate-500 mt-1">Yet to bat</p>
                 </div>
               </div>
@@ -171,40 +173,40 @@ const LiveScores = () => {
           </div>
 
           {/* Match Info Card (1 col) */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
-            <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 mb-3">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 flex flex-col justify-between">
+            <h3 className="text-base font-extrabold text-slate-900 border-b border-slate-100 pb-2.5">
               Match Info
             </h3>
-            <div className="space-y-3 text-xs sm:text-sm font-medium">
+            <div className="space-y-2.5 text-xs sm:text-sm font-medium pt-2">
               <div className="flex items-center justify-between text-slate-600">
-                <span className="inline-flex items-center gap-2 text-slate-400">
-                  <Calendar className="w-4 h-4 text-slate-400" /> Date
+                <span className="inline-flex items-center gap-2 text-slate-700 font-semibold">
+                  <Calendar className="w-4 h-4 text-slate-700" /> Date
                 </span>
-                <span className="font-semibold text-slate-800">Aug 12, 2025</span>
+                <span className="text-slate-700">Aug 12, 2025</span>
               </div>
               <div className="flex items-center justify-between text-slate-600">
-                <span className="inline-flex items-center gap-2 text-slate-400">
-                  <Clock className="w-4 h-4 text-slate-400" /> Time
+                <span className="inline-flex items-center gap-2 text-slate-700 font-semibold">
+                  <Clock className="w-4 h-4 text-slate-700" /> Time
                 </span>
-                <span className="font-semibold text-slate-800">02:00 PM (IST)</span>
+                <span className="text-slate-700">02:00 PM (IST)</span>
               </div>
               <div className="flex items-center justify-between text-slate-600">
-                <span className="inline-flex items-center gap-2 text-slate-400">
-                  <MapPin className="w-4 h-4 text-slate-400" /> Venue
+                <span className="inline-flex items-center gap-2 text-slate-700 font-semibold">
+                  <MapPin className="w-4 h-4 text-slate-700" /> Venue
                 </span>
-                <span className="font-semibold text-slate-800 truncate max-w-[170px] text-right">Greenfield Stadium, Mumbai</span>
+                <span className="text-slate-700 truncate max-w-[170px] text-right">Greenfield Stadium, Mumbai</span>
               </div>
               <div className="flex items-center justify-between text-slate-600">
-                <span className="inline-flex items-center gap-2 text-slate-400">
-                  <Trophy className="w-4 h-4 text-slate-400" /> Tournament
+                <span className="inline-flex items-center gap-2 text-slate-700 font-semibold">
+                  <Trophy className="w-4 h-4 text-slate-700" /> Tournament
                 </span>
-                <span className="font-semibold text-slate-800 truncate max-w-[170px] text-right">City Champions League</span>
+                <span className="text-slate-700 truncate max-w-[170px] text-right">City Champions League</span>
               </div>
               <div className="flex items-center justify-between text-slate-600">
-                <span className="inline-flex items-center gap-2 text-slate-400">
-                  <Activity className="w-4 h-4 text-slate-400" /> Format
+                <span className="inline-flex items-center gap-2 text-slate-700 font-semibold">
+                  <Activity className="w-4 h-4 text-slate-700" /> Format
                 </span>
-                <span className="font-semibold text-slate-800">T20</span>
+                <span className="text-slate-700">T20</span>
               </div>
             </div>
           </div>
@@ -212,14 +214,14 @@ const LiveScores = () => {
         </div>
 
         {/* Navigation Tabs (Live, Scorecard, Commentary, Stats) */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 px-2 flex items-center gap-2 overflow-x-auto">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 px-4 flex items-center gap-6 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 text-sm font-bold transition-all relative ${
+              className={`py-3 text-sm font-semibold transition-all relative ${
                 activeTab === tab
-                  ? 'text-emerald-600 after:content-[""] after:absolute after:bottom-0 after:left-2 after:right-2 after:h-0.5 after:bg-emerald-500'
+                  ? 'text-emerald-600 font-bold after:content-[""] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-emerald-500'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -229,19 +231,19 @@ const LiveScores = () => {
         </div>
 
         {/* Middle Section: Batting, Bowling, and Over / Rate Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* Batting Table (Col 1) */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
             <div className="flex items-center gap-2 font-bold text-slate-900 pb-3 mb-1">
-              <span className="w-6 h-6 rounded-md bg-emerald-50 flex items-center justify-center text-emerald-600 text-xs">🏏</span>
+              <span className="w-6 h-6 rounded-md bg-emerald-50 flex items-center justify-center text-emerald-600 text-xs font-bold">🏏</span>
               <span>Batting</span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs sm:text-sm">
                 <thead>
-                  <tr className="text-slate-400 border-b border-slate-100 text-[11px] font-semibold uppercase">
+                  <tr className="text-slate-400 border-b border-slate-100 text-[11px] font-semibold">
                     <th className="py-2 font-semibold">Batter</th>
                     <th className="py-2 text-right">R</th>
                     <th className="py-2 text-right">B</th>
@@ -251,32 +253,18 @@ const LiveScores = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  <tr>
-                    <td className="py-3 text-slate-900 font-bold">
-                      Arjun Sharma <span className="text-emerald-600 font-black">*</span>
-                    </td>
-                    <td className="py-3 text-right font-bold text-slate-900">52</td>
-                    <td className="py-3 text-right text-slate-600">38</td>
-                    <td className="py-3 text-right text-slate-600">6</td>
-                    <td className="py-3 text-right text-slate-600">2</td>
-                    <td className="py-3 text-right text-slate-600">136.8</td>
-                  </tr>
-                  <tr>
-                    <td className="py-3 text-slate-800">Rohit Verma</td>
-                    <td className="py-3 text-right font-bold text-slate-900">34</td>
-                    <td className="py-3 text-right text-slate-600">28</td>
-                    <td className="py-3 text-right text-slate-600">4</td>
-                    <td className="py-3 text-right text-slate-600">1</td>
-                    <td className="py-3 text-right text-slate-600">121.4</td>
-                  </tr>
-                  <tr>
-                    <td className="py-3 text-slate-800">Kunal Patel</td>
-                    <td className="py-3 text-right font-bold text-slate-900">18</td>
-                    <td className="py-3 text-right text-slate-600">12</td>
-                    <td className="py-3 text-right text-slate-600">2</td>
-                    <td className="py-3 text-right text-slate-600">1</td>
-                    <td className="py-3 text-right text-slate-600">150.0</td>
-                  </tr>
+                  {batters.map((b, i) => (
+                    <tr key={i}>
+                      <td className="py-3 text-slate-900 font-bold">
+                        {b.name} {b.isStriker && <span className="text-slate-900 font-normal"> *</span>}
+                      </td>
+                      <td className="py-3 text-right font-bold text-slate-900">{b.runs}</td>
+                      <td className="py-3 text-right text-slate-600">{b.balls}</td>
+                      <td className="py-3 text-right text-slate-600">{b.fours}</td>
+                      <td className="py-3 text-right text-slate-600">{b.sixes}</td>
+                      <td className="py-3 text-right text-slate-600">{b.sr}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -285,14 +273,14 @@ const LiveScores = () => {
           {/* Bowling Table (Col 2) */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
             <div className="flex items-center gap-2 font-bold text-slate-900 pb-3 mb-1">
-              <span className="w-6 h-6 rounded-md bg-rose-50 flex items-center justify-center text-rose-600 text-xs">🔴</span>
+              <span className="w-6 h-6 rounded-md bg-rose-50 flex items-center justify-center text-rose-600 text-xs font-bold">🔴</span>
               <span>Bowling</span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs sm:text-sm">
                 <thead>
-                  <tr className="text-slate-400 border-b border-slate-100 text-[11px] font-semibold uppercase">
+                  <tr className="text-slate-400 border-b border-slate-100 text-[11px] font-semibold">
                     <th className="py-2 font-semibold">Bowler</th>
                     <th className="py-2 text-right">O</th>
                     <th className="py-2 text-right">M</th>
@@ -302,22 +290,16 @@ const LiveScores = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium">
-                  <tr>
-                    <td className="py-3 text-slate-900 font-semibold">Sameer Khan</td>
-                    <td className="py-3 text-right text-slate-600">3.2</td>
-                    <td className="py-3 text-right text-slate-600">0</td>
-                    <td className="py-3 text-right text-slate-600">28</td>
-                    <td className="py-3 text-right font-bold text-slate-900">1</td>
-                    <td className="py-3 text-right text-slate-600">8.40</td>
-                  </tr>
-                  <tr>
-                    <td className="py-3 text-slate-900 font-semibold">Dev Malhotra</td>
-                    <td className="py-3 text-right text-slate-600">4.0</td>
-                    <td className="py-3 text-right text-slate-600">0</td>
-                    <td className="py-3 text-right text-slate-600">24</td>
-                    <td className="py-3 text-right font-bold text-slate-900">2</td>
-                    <td className="py-3 text-right text-slate-600">6.00</td>
-                  </tr>
+                  {bowlers.map((bw, i) => (
+                    <tr key={i}>
+                      <td className="py-3 text-slate-900 font-semibold">{bw.name}</td>
+                      <td className="py-3 text-right text-slate-600">{bw.overs}</td>
+                      <td className="py-3 text-right text-slate-600">{bw.maidens}</td>
+                      <td className="py-3 text-right text-slate-600">{bw.runs}</td>
+                      <td className="py-3 text-right font-bold text-slate-900">{bw.wickets}</td>
+                      <td className="py-3 text-right text-slate-600">{bw.eco}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -329,14 +311,14 @@ const LiveScores = () => {
             {/* Current Over Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
               <div className="flex items-center gap-2 font-bold text-slate-900 mb-4">
-                <Target className="w-5 h-5 text-slate-700" />
+                <Target className="w-5 h-5 text-slate-800" />
                 <span>Current Over (16.3)</span>
               </div>
               <div className="flex items-center justify-between gap-1 sm:gap-2">
                 {currentOverBalls.map((item, idx) => (
                   <div
                     key={idx}
-                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm ${item.bg} shadow-sm border border-slate-200/60`}
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm ${item.bg} shadow-xs font-semibold`}
                   >
                     {item.runs}
                   </div>
@@ -351,8 +333,8 @@ const LiveScores = () => {
                   <TrendingUp className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-slate-500">Run Rate</div>
-                  <div className="text-xl font-black text-slate-900 leading-tight">7.84</div>
+                  <div className="text-xs font-medium text-slate-500">Run Rate</div>
+                  <div className="text-2xl font-black text-slate-900 leading-tight">7.84</div>
                   <div className="text-[10px] text-slate-400 font-medium">Current (CRR)</div>
                 </div>
               </div>
@@ -362,8 +344,8 @@ const LiveScores = () => {
                   <Target className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-slate-500">Target</div>
-                  <div className="text-xl font-black text-slate-900 leading-tight">156</div>
+                  <div className="text-xs font-medium text-slate-500">Target</div>
+                  <div className="text-2xl font-black text-slate-900 leading-tight">156</div>
                   <div className="text-[10px] text-slate-400 font-medium">To Win</div>
                 </div>
               </div>
