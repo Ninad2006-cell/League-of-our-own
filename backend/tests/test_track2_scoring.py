@@ -2,13 +2,14 @@ import httpx
 import json
 
 BASE_URL = "http://localhost:8000"
+client = httpx.Client(timeout=25.0)
 
 
 def run_tests():
     print("=== STARTING TRACK 2 TEST SUITE ===")
 
     # 1. List matches
-    res = httpx.get(f"{BASE_URL}/api/matches")
+    res = client.get(f"{BASE_URL}/api/matches")
     assert res.status_code == 200, f"List matches failed: {res.text}"
     matches = res.json()
     assert len(matches) > 0, "No matches returned"
@@ -37,7 +38,7 @@ def run_tests():
         "bowler_id": arjun["player_id"],
         "overs": 20
     }
-    start_res = httpx.post(f"{BASE_URL}/api/scoring/matches/{match_id}/start", json=start_payload)
+    start_res = client.post(f"{BASE_URL}/api/scoring/matches/{match_id}/start", json=start_payload)
     assert start_res.status_code == 200, f"Start match failed: {start_res.text}"
     print("[PASS] Match started with toss recorded.")
 
@@ -51,7 +52,7 @@ def run_tests():
         "extras_runs": 0,
         "is_wicket": False
     }
-    b1_res = httpx.post(f"{BASE_URL}/api/scoring/matches/{match_id}/ball", json=b1_payload)
+    b1_res = client.post(f"{BASE_URL}/api/scoring/matches/{match_id}/ball", json=b1_payload)
     assert b1_res.status_code == 200, f"Ball 1 failed: {b1_res.text}"
     scorecard = b1_res.json()
     assert scorecard["total_runs"] >= 4
@@ -67,7 +68,7 @@ def run_tests():
         "extras_runs": 0,
         "is_wicket": False
     }
-    b2_res = httpx.post(f"{BASE_URL}/api/scoring/matches/{match_id}/ball", json=b2_payload)
+    b2_res = client.post(f"{BASE_URL}/api/scoring/matches/{match_id}/ball", json=b2_payload)
     assert b2_res.status_code == 200, f"Ball 2 failed: {b2_res.text}"
     scorecard = b2_res.json()
     print(f"[PASS] Ball 2 logged (Single): Strike rotated. Striker is now: {scorecard['striker']['name']}")
@@ -83,25 +84,25 @@ def run_tests():
         "extras_runs": 0,
         "is_wicket": False
     }
-    b3_res = httpx.post(f"{BASE_URL}/api/scoring/matches/{match_id}/ball", json=b3_payload)
+    b3_res = client.post(f"{BASE_URL}/api/scoring/matches/{match_id}/ball", json=b3_payload)
     assert b3_res.status_code == 200, f"Ball 3 wide failed: {b3_res.text}"
     scorecard = b3_res.json()
     print(f"[PASS] Ball 3 logged (Wide): Total = {scorecard['total_runs']}, Overs = {scorecard['overs_played']}")
 
     # 6. Undo the Wide delivery
-    undo_res = httpx.post(f"{BASE_URL}/api/scoring/matches/{match_id}/undo")
+    undo_res = client.post(f"{BASE_URL}/api/scoring/matches/{match_id}/undo")
     assert undo_res.status_code == 200, f"Undo failed: {undo_res.text}"
     scorecard = undo_res.json()
     print(f"[PASS] Delivery Undone successfully: Total = {scorecard['total_runs']}")
 
     # 7. Check Live Scorecard endpoint
-    live_res = httpx.get(f"{BASE_URL}/api/matches/{match_id}/live")
+    live_res = client.get(f"{BASE_URL}/api/matches/{match_id}/live")
     assert live_res.status_code == 200, f"Live scorecard failed: {live_res.text}"
     live_data = live_res.json()
     print(f"[PASS] Live Scorecard Verified: {live_data['tournament']}, Score: {live_data['total_runs']}/{live_data['wickets']}, CRR: {live_data['crr']}")
 
     # 8. Check Commentary feed
-    comm_res = httpx.get(f"{BASE_URL}/api/matches/{match_id}/commentary")
+    comm_res = client.get(f"{BASE_URL}/api/matches/{match_id}/commentary")
     assert comm_res.status_code == 200, f"Commentary failed: {comm_res.text}"
     commentary = comm_res.json()
     print(f"[PASS] Commentary Feed Verified: {len(commentary)} balls logged.")

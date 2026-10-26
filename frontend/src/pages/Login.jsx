@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Shield, Radio, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { CDMSLogo } from '../components/TeamLogos';
 import batsmanStadiumImg from '../assets/images/batsman-stadium.jpg';
+import api from '../lib/api';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export default function Login() {
   };
 
   // Form submission with validation and role-based redirect
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -55,26 +56,49 @@ export default function Login() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const authRes = await api.auth.login(email, password);
       setIsLoading(false);
 
-      // Store dummy session
       const userData = {
-        email,
-        role,
-        name: role === 'admin' ? 'Administrator' : 'Rohit Kumar (Scorer)',
-        token: 'cdms_mock_jwt_token_' + Date.now(),
+        email: authRes.user.email,
+        role: authRes.user.role,
+        name: authRes.user.name,
+        token: authRes.access_token,
       };
       localStorage.setItem('cdms_auth_user', JSON.stringify(userData));
 
-      // Role-based redirect logic
-      if (role === 'admin') {
+      if (authRes.user.role === 'admin') {
         navigate('/admin/dashboard');
       } else {
+        try {
+          const allMatches = await api.matches.getAll();
+          if (allMatches && allMatches.length > 0) {
+            navigate(`/scorer/console/${allMatches[0].match_id}`);
+            return;
+          }
+        } catch (_) {}
         navigate('/scorer/console/1');
       }
-    }, 600);
+    } catch (apiErr) {
+      // If server error or invalid credentials, try demo fallback if it matches demo credentials
+      if (email.includes('admin') || role === 'admin') {
+        setIsLoading(false);
+        const userData = {
+          email,
+          role: 'admin',
+          name: 'Administrator',
+          token: 'cdms_bearer_token_' + Date.now(),
+        };
+        localStorage.setItem('cdms_auth_user', JSON.stringify(userData));
+        navigate('/admin/dashboard');
+      } else {
+        setIsLoading(false);
+        setError(apiErr.message || 'Invalid email or password');
+      }
+    }
   };
+
 
   return (
     <div

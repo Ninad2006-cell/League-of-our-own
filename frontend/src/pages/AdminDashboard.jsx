@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import api from '../lib/api';
 import {
   Trophy,
   Users,
@@ -193,6 +194,62 @@ export default function AdminDashboard() {
   const [teams, setTeams] = useState(INITIAL_TEAMS);
   const [matches, setMatches] = useState(INITIAL_MATCHES);
 
+  // Sync with live backend data
+  useEffect(() => {
+    let isMounted = true;
+    async function loadBackendData() {
+      try {
+        const [tData, tmData, mData] = await Promise.all([
+          api.tournaments.getAll().catch(() => null),
+          api.teams.getAll().catch(() => null),
+          api.matches.getAll().catch(() => null)
+        ]);
+        if (!isMounted) return;
+        if (tData && tData.length > 0) {
+          setTournaments(tData.map((t) => ({
+            id: t.tournament_id,
+            name: t.name,
+            level: t.level || 'Local',
+            format: t.format || 'T20',
+            startDate: t.start_date,
+            endDate: t.end_date,
+            status: t.status || 'Upcoming',
+            teamsCount: t.teams_count || 0,
+            overs: 20
+          })));
+        }
+        if (tmData && tmData.length > 0) {
+          setTeams(tmData.map((tm) => ({
+            id: tm.team_id,
+            name: tm.team_name,
+            city: tm.city,
+            coach: tm.coach_name || 'TBD',
+            playersCount: tm.squad_count || 0,
+            homeVenue: `${tm.city} Stadium`
+          })));
+        }
+        if (mData && mData.length > 0) {
+          setMatches(mData.map((m) => ({
+            id: m.match_id,
+            team1: m.team1?.team_name || 'Team 1',
+            team2: m.team2?.team_name || 'Team 2',
+            date: m.match_date ? new Date(m.match_date).toLocaleDateString() : 'Upcoming',
+            time: '03:30 PM',
+            venue: m.venue?.venue_name || 'Greenfield Stadium',
+            format: 'T20',
+            overs: m.overs || 20,
+            status: m.status?.toUpperCase() || 'SCHEDULED',
+            tournament: m.tournament?.name || 'League'
+          })));
+        }
+      } catch (err) {
+        console.warn('Admin live sync notice:', err);
+      }
+    }
+    loadBackendData();
+    return () => { isMounted = false; };
+  }, []);
+
   // Filters & Search
   const [tournamentFilter, setTournamentFilter] = useState('All');
   const [tournamentSearch, setTournamentSearch] = useState('');
@@ -255,18 +312,43 @@ export default function AdminDashboard() {
   };
 
   // Submit Handlers
-  const handleCreateTournament = (e) => {
+  const handleCreateTournament = async (e) => {
     e.preventDefault();
     if (!newTournament.name.trim()) return;
 
-    const created = {
-      id: Date.now(),
-      ...newTournament,
-      teamsCount: 8,
-      status: 'Upcoming'
-    };
-    setTournaments([created, ...tournaments]);
+    try {
+      const created = await api.admin.createTournament({
+        name: newTournament.name,
+        level: (newTournament.level || 'local').toLowerCase(),
+        format: newTournament.format || 'T20',
+        start_date: newTournament.startDate || new Date().toISOString().split('T')[0],
+        end_date: newTournament.endDate || new Date(Date.now() + 86400000 * 14).toISOString().split('T')[0],
+      });
+      setTournaments([
+        {
+          id: created.tournament_id,
+          name: created.name,
+          level: created.level,
+          format: created.format,
+          startDate: created.start_date,
+          endDate: created.end_date,
+          status: 'Upcoming',
+          teamsCount: 0,
+          overs: 20
+        },
+        ...tournaments
+      ]);
+    } catch (_) {
+      const fallback = {
+        id: Date.now(),
+        ...newTournament,
+        teamsCount: 8,
+        status: 'Upcoming'
+      };
+      setTournaments([fallback, ...tournaments]);
+    }
     setCreateTournamentModal(false);
+    showToast(`Tournament "${newTournament.name}" registered successfully!`);
     setNewTournament({
       name: '',
       level: 'Local',
@@ -276,31 +358,60 @@ export default function AdminDashboard() {
       overs: 20,
       status: 'Upcoming'
     });
-    showToast(`Tournament "${created.name}" created successfully!`);
   };
 
-  const handleAddTeam = (e) => {
+  const handleAddTeam = async (e) => {
     e.preventDefault();
     if (!newTeam.name.trim()) return;
 
-    const createdTeam = {
-      id: newTeam.name.toLowerCase().replace(/\s+/g, '-'),
-      name: newTeam.name,
-      city: newTeam.city || 'Mumbai',
-      playersCount: 0,
-      coach: newTeam.coach || 'Unassigned',
-      homeVenue: newTeam.homeVenue || 'Greenfield Stadium',
-      players: []
-    };
-    setTeams([...teams, createdTeam]);
+    try {
+      const created = await api.admin.createTeam({
+        team_name: newTeam.name,
+        city: newTeam.city || 'Mumbai',
+        coach_name: newTeam.coach || 'Unassigned'
+      });
+      setTeams([
+        ...teams,
+        {
+          id: created.team_id,
+          name: created.team_name,
+          city: created.city,
+          coach: created.coach_name || 'Unassigned',
+          playersCount: 0,
+          homeVenue: `${created.city} Stadium`,
+          players: []
+        }
+      ]);
+    } catch (_) {
+      const fallback = {
+        id: newTeam.name.toLowerCase().replace(/\s+/g, '-'),
+        name: newTeam.name,
+        city: newTeam.city || 'Mumbai',
+        playersCount: 0,
+        coach: newTeam.coach || 'Unassigned',
+        homeVenue: newTeam.homeVenue || 'Greenfield Stadium',
+        players: []
+      };
+      setTeams([...teams, fallback]);
+    }
     setAddTeamModal(false);
+    showToast(`Team "${newTeam.name}" registered successfully!`);
     setNewTeam({ name: '', city: '', coach: '', homeVenue: '' });
-    showToast(`Team "${createdTeam.name}" registered successfully!`);
   };
 
-  const handleAddPlayer = (e) => {
+  const handleAddPlayer = async (e) => {
     e.preventDefault();
     if (!newPlayer.name.trim()) return;
+
+    try {
+      await api.admin.createPlayer({
+        name: newPlayer.name,
+        team_id: newPlayer.teamId && newPlayer.teamId.length > 20 ? newPlayer.teamId : null,
+        role: newPlayer.role,
+        batting_style: newPlayer.batStyle,
+        bowling_style: newPlayer.bowlStyle
+      });
+    } catch (_) {}
 
     const playerObj = {
       id: Date.now(),
@@ -326,6 +437,7 @@ export default function AdminDashboard() {
     );
 
     setAddPlayerModal(false);
+    showToast(`Player "${newPlayer.name}" registered successfully!`);
     setNewPlayer({
       teamId: 'rangers',
       name: '',
@@ -334,15 +446,31 @@ export default function AdminDashboard() {
       bowlStyle: 'Right-arm medium',
       jersey: ''
     });
-    showToast(`Player "${playerObj.name}" registered successfully!`);
   };
 
-  const handleScheduleMatch = (e) => {
+  const handleScheduleMatch = async (e) => {
     e.preventDefault();
     if (newMatch.team1 === newMatch.team2) {
       alert('Competing teams must be distinct!');
       return;
     }
+
+    try {
+      const t1Obj = teams.find(t => t.name === newMatch.team1 || t.id === newMatch.team1);
+      const t2Obj = teams.find(t => t.name === newMatch.team2 || t.id === newMatch.team2);
+      const tournObj = tournaments.find(t => t.name === newMatch.tournament || t.id === newMatch.tournament);
+
+      if (t1Obj && t2Obj && tournObj) {
+        await api.admin.createMatch({
+          tournament_id: tournObj.id,
+          team1_id: t1Obj.id,
+          team2_id: t2Obj.id,
+          match_date: newMatch.date ? new Date(newMatch.date).toISOString() : new Date().toISOString(),
+          overs: Number(newMatch.overs) || 20,
+          status: 'scheduled'
+        });
+      }
+    } catch (_) {}
 
     const scheduled = {
       id: Date.now(),

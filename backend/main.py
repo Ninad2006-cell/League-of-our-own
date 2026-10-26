@@ -28,6 +28,11 @@ def read_root():
 def health_check():
     return {"status": "healthy"}
 
+# Track 1 Routers: Auth & Admin
+from app.routers import auth, admin
+app.include_router(auth.router, prefix="/api/auth")
+app.include_router(admin.router, prefix="/api/admin")
+
 # Track 2 Routers: Live Scoring & Real-Time Matches
 from app.routers import scoring, matches
 app.include_router(scoring.router, prefix="/api/scoring")

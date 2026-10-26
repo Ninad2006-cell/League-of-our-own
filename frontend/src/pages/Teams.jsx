@@ -1,134 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   ShieldCheck, 
-  Trophy, 
-  TrendingUp, 
   MapPin, 
   ChevronRight,
-  Medal,
-  Activity
+  RefreshCw,
+  AlertCircle,
+  X,
+  User
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { RangersLogo, StrikersLogo } from '../components/TeamLogos';
+import api from '../lib/api';
 
 const Teams = () => {
-  const [selectedTournament, setSelectedTournament] = useState('City Champions League');
+  const [teams, setTeams] = useState([]);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [squadDetails, setSquadDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [squadLoading, setSquadLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const teamsList = [
-    {
-      id: 'rangers',
-      name: 'Rangers',
-      shortName: 'RAN',
-      city: 'Mumbai',
-      captain: 'Arjun Sharma',
-      coach: 'Rahul Dravid',
-      matches: 7,
-      won: 5,
-      lost: 2,
-      points: 10,
-      nrr: '+0.884',
-      primaryColor: 'rose-500',
-      logo: <RangersLogo size={56} />,
-      form: ['W', 'W', 'L', 'W', 'W'],
-    },
-    {
-      id: 'strikers',
-      name: 'Strikers',
-      shortName: 'STR',
-      city: 'Delhi',
-      captain: 'Dev Malhotra',
-      coach: 'Gautam Gambhir',
-      matches: 7,
-      won: 5,
-      lost: 2,
-      points: 10,
-      nrr: '+0.607',
-      primaryColor: 'blue-500',
-      logo: <StrikersLogo size={56} />,
-      form: ['W', 'L', 'W', 'W', 'W'],
-    },
-    {
-      id: 'titans',
-      name: 'Titans',
-      shortName: 'TIT',
-      city: 'Ahmedabad',
-      captain: 'Hardik Roy',
-      coach: 'Ashish Nehra',
-      matches: 7,
-      won: 4,
-      lost: 3,
-      points: 8,
-      nrr: '+0.198',
-      primaryColor: 'amber-500',
-      logo: (
-        <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center font-black text-amber-500 text-lg">
-          TIT
-        </div>
-      ),
-      form: ['L', 'W', 'W', 'L', 'W'],
-    },
-    {
-      id: 'royals',
-      name: 'Royals',
-      shortName: 'ROY',
-      city: 'Jaipur',
-      captain: 'Sanju Varma',
-      coach: 'Kumar S.',
-      matches: 7,
-      won: 3,
-      lost: 4,
-      points: 6,
-      nrr: '-0.225',
-      primaryColor: 'purple-500',
-      logo: (
-        <div className="w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center font-black text-purple-500 text-lg">
-          ROY
-        </div>
-      ),
-      form: ['L', 'L', 'W', 'W', 'L'],
-    },
-    {
-      id: 'warriors',
-      name: 'Warriors',
-      shortName: 'WAR',
-      city: 'Bengaluru',
-      captain: 'Virat Sen',
-      coach: 'Andy Flower',
-      matches: 7,
-      won: 2,
-      lost: 5,
-      points: 4,
-      nrr: '-0.912',
-      primaryColor: 'emerald-500',
-      logo: (
-        <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center font-black text-emerald-500 text-lg">
-          WAR
-        </div>
-      ),
-      form: ['W', 'L', 'L', 'L', 'L'],
-    },
-    {
-      id: 'knights',
-      name: 'Knights',
-      shortName: 'KNI',
-      city: 'Kolkata',
-      captain: 'Shreyas I.',
-      coach: 'Chandrakant P.',
-      matches: 7,
-      won: 1,
-      lost: 6,
-      points: 2,
-      nrr: '-1.670',
-      primaryColor: 'slate-500',
-      logo: (
-        <div className="w-14 h-14 rounded-2xl bg-slate-500/10 border border-slate-500/30 flex items-center justify-center font-black text-slate-500 text-lg">
-          KNI
-        </div>
-      ),
-      form: ['L', 'L', 'L', 'L', 'W'],
-    },
-  ];
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchTeams() {
+      try {
+        setLoading(true);
+        const data = await api.teams.getAll();
+        if (!isMounted) return;
+        setTeams(data);
+      } catch (err) {
+        if (!isMounted) return;
+        setError(err.message || 'Failed to load teams');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    fetchTeams();
+    return () => { isMounted = false; };
+  }, []);
+
+  const handleSelectTeam = async (team) => {
+    setSelectedTeam(team);
+    setSquadLoading(true);
+    try {
+      const details = await api.teams.getById(team.team_id);
+      setSquadDetails(details);
+    } catch (e) {
+      console.warn('Failed to load squad:', e);
+    } finally {
+      setSquadLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#eef2f6] pb-16 font-sans">
@@ -147,95 +69,146 @@ const Teams = () => {
               <span>Team Directory</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white drop-shadow-md">
-              Participating Teams & Standings
+              Participating Teams & Squads
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
-              Explore franchises, player squads, net run rates, points standings, and team leadership.
+              Explore domestic, club, and franchise cricket teams, official coaching staff, and active squads.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Main Container */}
+      {/* Main Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 -mt-6">
-
-        {/* Teams Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {teamsList.map((team, idx) => (
-            <div
-              key={team.id}
-              className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative overflow-hidden"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-900 flex items-center justify-center p-1 shrink-0 overflow-hidden shadow-xs">
-                    {team.logo}
+        {loading ? (
+          <div className="bg-white rounded-2xl p-12 text-center text-slate-500 shadow-sm border border-slate-200">
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
+            <p className="text-sm font-semibold">Loading teams from registry...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 text-sm flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {teams.map((team) => (
+              <div
+                key={team.team_id}
+                onClick={() => handleSelectTeam(team)}
+                className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 hover:shadow-lg hover:border-blue-400/60 transition-all cursor-pointer flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-xl shadow-md group-hover:scale-105 transition-transform">
+                      {team.team_name.slice(0, 3).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors">
+                        {team.team_name}
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                        {team.city}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-extrabold text-slate-900">{team.name}</h3>
-                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5 font-medium">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                      {team.city}
-                    </p>
+
+                  <div className="bg-slate-50 rounded-xl p-3 text-xs space-y-2 border border-slate-100">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Head Coach</span>
+                      <span className="font-bold text-slate-800">{team.coach_name || 'TBD'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Registered Squad</span>
+                      <span className="font-bold text-slate-800">{team.squad_count} Players</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <div className="text-2xl font-black text-slate-900">{team.points} <span className="text-xs font-bold text-slate-400">PTS</span></div>
-                  <span className={`text-xs font-bold ${team.nrr.startsWith('+') ? 'text-emerald-600' : 'text-rose-500'}`}>
-                    NRR {team.nrr}
-                  </span>
-                </div>
-              </div>
-
-              {/* Stats & Leadership */}
-              <div className="py-4 space-y-2.5 text-xs text-slate-600 font-medium">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Captain</span>
-                  <span className="font-bold text-slate-800">{team.captain}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Head Coach</span>
-                  <span className="font-bold text-slate-800">{team.coach}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Record (W-L)</span>
-                  <span className="font-bold text-slate-800">{team.won} Won • {team.lost} Lost</span>
-                </div>
-              </div>
-
-              {/* Form & Link */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1">
-                  <span className="text-[11px] font-semibold text-slate-400 mr-1">Form:</span>
-                  {team.form.map((res, i) => (
-                    <span
-                      key={i}
-                      className={`w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center ${
-                        res === 'W'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-rose-100 text-rose-700'
-                      }`}
-                    >
-                      {res}
-                    </span>
-                  ))}
-                </div>
-
-                <Link
-                  to="/player/1"
-                  className="inline-flex items-center gap-1 font-bold text-emerald-600 hover:text-emerald-700 transition-colors"
-                >
-                  <span>View Squad</span>
+                <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-blue-600 font-bold group-hover:translate-x-0.5 transition-transform">
+                  <span>View Squad Roster</span>
                   <ChevronRight className="w-4 h-4" />
-                </Link>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Squad Drawer / Modal */}
+      {selectedTeam && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-sm">
+                  {selectedTeam.team_name.slice(0, 3).toUpperCase()}
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900">{selectedTeam.team_name}</h2>
+                  <p className="text-xs text-slate-500">{selectedTeam.city} • Coach: {selectedTeam.coach_name || 'TBD'}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setSelectedTeam(null); setSquadDetails(null); }}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 py-4 space-y-2">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Squad Roster</h4>
+              {squadLoading ? (
+                <div className="py-8 text-center text-slate-400">
+                  <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-blue-600" />
+                  <p className="text-xs">Loading squad members...</p>
+                </div>
+              ) : squadDetails?.squad?.length > 0 ? (
+                squadDetails.squad.map((player) => (
+                  <div
+                    key={player.player_id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100 text-xs"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-900 text-sm block">{player.name}</span>
+                        <span className="text-slate-500">{player.batting_style || 'Right-hand bat'} • {player.bowling_style || 'Right-arm medium'}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800">
+                        {player.role || 'Player'}
+                      </span>
+                      <Link
+                        to={`/player/${player.player_id}`}
+                        className="text-emerald-600 font-bold hover:underline flex items-center gap-0.5"
+                      >
+                        Profile <ChevronRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-slate-400 py-4 text-center">No squad members registered yet for this team.</p>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex justify-end">
+              <button
+                onClick={() => { setSelectedTeam(null); setSquadDetails(null); }}
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

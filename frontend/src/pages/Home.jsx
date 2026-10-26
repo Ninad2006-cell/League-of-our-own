@@ -9,7 +9,7 @@ const features = [
     subtitle: 'Manage cricket events',
     iconBg: 'bg-amber-50',
     iconColor: 'text-amber-500',
-    link: '/schedule-points',
+    link: '/tournaments',
   },
   {
     icon: Activity,
@@ -17,7 +17,7 @@ const features = [
     subtitle: 'Ball-by-ball updates',
     iconBg: 'bg-rose-50',
     iconColor: 'text-rose-500',
-    link: '/live-scorecard/1',
+    link: '/live-scores',
     customIcon: (
       <div className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-rose-50 text-rose-500">
         <div className="w-8 h-8 rounded-full bg-rose-500 flex items-center justify-center relative overflow-hidden shadow-inner">
@@ -33,7 +33,7 @@ const features = [
     subtitle: 'Player profiles and performance',
     iconBg: 'bg-emerald-500/10',
     iconColor: 'text-emerald-600',
-    link: '/player/1',
+    link: '/players',
   },
   {
     icon: Users,
@@ -41,7 +41,7 @@ const features = [
     subtitle: 'Register and manage teams',
     iconBg: 'bg-blue-50',
     iconColor: 'text-blue-600',
-    link: '/schedule-points',
+    link: '/teams',
   },
 ];
 
@@ -81,19 +81,20 @@ const Home = () => {
             {/* Call-to-Action (CTA) Buttons */}
             <div className="flex flex-wrap items-center gap-4 pt-3">
               <Link
-                to="/live-scorecard/1"
+                to="/live-scores"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold transition-all duration-200 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 hover:-translate-y-0.5"
               >
                 <span>View Live Scores</span>
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
-                to="/schedule-points"
+                to="/tournaments"
                 className="inline-flex items-center justify-center px-6 py-3.5 rounded-xl bg-slate-900/80 hover:bg-slate-900 border border-slate-700 text-white font-semibold transition-all duration-200 backdrop-blur-md hover:border-slate-600 hover:-translate-y-0.5"
               >
                 Explore Tournaments
               </Link>
             </div>
+
           </div>
         </div>
       </section>

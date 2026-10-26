@@ -22,6 +22,8 @@ import {
 import Sidebar from '../components/Sidebar';
 import TopHeader from '../components/TopHeader';
 import { RangersLogo, StrikersLogo } from '../components/TeamLogos';
+import api from '../lib/api';
+import useLiveMatch from '../lib/useLiveMatch';
 
 // Initial Mock Match State matching Reference Images 1 & 2
 const INITIAL_MATCH_STATE = {
@@ -81,9 +83,11 @@ const INITIAL_MATCH_STATE = {
 };
 
 export default function ScoringConsole() {
-  const { matchId } = useParams();
+  const { matchId: routeMatchId } = useParams();
+  const [realMatchId, setRealMatchId] = useState(null);
   const [matchState, setMatchState] = useState(INITIAL_MATCH_STATE);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [availablePlayers, setAvailablePlayers] = useState([]);
 
   // Form Inputs in Console
   const [selectedRuns, setSelectedRuns] = useState(4);
@@ -109,6 +113,104 @@ export default function ScoringConsole() {
 
   const runsOptions = [0, 1, 2, 3, 4, 6];
 
+  // Map backend scorecard payload to matchState
+  const applyBackendScorecard = (scorecard) => {
+    if (!scorecard) return;
+    const oversInt = Math.floor(scorecard.overs_played || 0);
+    const ballsInOver = Math.round(((scorecard.overs_played || 0) - oversInt) * 10);
+
+    const batsmenArr = [];
+    if (scorecard.striker) {
+      batsmenArr.push({
+        id: scorecard.striker.player_id,
+        name: scorecard.striker.name,
+        runs: scorecard.striker.runs,
+        balls: scorecard.striker.balls,
+        fours: scorecard.striker.fours,
+        sixes: scorecard.striker.sixes,
+        isStriker: true,
+        isOut: false
+      });
+    }
+    if (scorecard.non_striker) {
+      batsmenArr.push({
+        id: scorecard.non_striker.player_id,
+        name: scorecard.non_striker.name,
+        runs: scorecard.non_striker.runs,
+        balls: scorecard.non_striker.balls,
+        fours: scorecard.non_striker.fours,
+        sixes: scorecard.non_striker.sixes,
+        isStriker: false,
+        isOut: false
+      });
+    }
+
+    setMatchState((prev) => ({
+      ...prev,
+      tournament: scorecard.tournament || prev.tournament,
+      venue: scorecard.venue || prev.venue,
+      team1: scorecard.team1?.team_name ? { name: scorecard.team1.team_name, short: scorecard.team1.team_name.slice(0, 3).toUpperCase() } : prev.team1,
+      team2: scorecard.team2?.team_name ? { name: scorecard.team2.team_name, short: scorecard.team2.team_name.slice(0, 3).toUpperCase() } : prev.team2,
+      target: scorecard.target || prev.target,
+      totalRuns: scorecard.total_runs ?? prev.totalRuns,
+      wickets: scorecard.wickets ?? prev.wickets,
+      overNumber: oversInt,
+      ballInOver: ballsInOver,
+      batsmen: batsmenArr.length > 0 ? batsmenArr : prev.batsmen,
+      currentBowler: scorecard.current_bowler ? {
+        id: scorecard.current_bowler.player_id,
+        name: scorecard.current_bowler.name,
+        overs: scorecard.current_bowler.overs,
+        maidens: scorecard.current_bowler.maidens,
+        runs: scorecard.current_bowler.runs,
+        wickets: scorecard.current_bowler.wickets
+      } : prev.currentBowler,
+      recentBalls: scorecard.recent_balls && scorecard.recent_balls.length > 0 ? scorecard.recent_balls : prev.recentBalls,
+      recentBallsLog: scorecard.recent_balls_log && scorecard.recent_balls_log.length > 0 ? scorecard.recent_balls_log : prev.recentBallsLog,
+      lastWicket: scorecard.last_wicket || prev.lastWicket
+    }));
+  };
+
+  // 1. Resolve matchId and initial live scorecard
+  useEffect(() => {
+    let isMounted = true;
+    async function initMatch() {
+      try {
+        let targetId = routeMatchId;
+        if (!targetId || targetId === '1') {
+          const allMatches = await api.matches.getAll();
+          if (allMatches && allMatches.length > 0) {
+            targetId = allMatches[0].match_id;
+          }
+        }
+        if (!isMounted) return;
+        setRealMatchId(targetId);
+
+        if (targetId) {
+          const [liveData, players] = await Promise.all([
+            api.matches.getLive(targetId),
+            api.players.getAll()
+          ]);
+          if (!isMounted) return;
+          applyBackendScorecard(liveData);
+          setAvailablePlayers(players);
+        }
+      } catch (err) {
+        console.warn('Scoring init error:', err);
+      }
+    }
+    initMatch();
+    return () => { isMounted = false; };
+  }, [routeMatchId]);
+
+  // 2. Connect WebSocket sync
+  const { scorecard: wsScorecard } = useLiveMatch(realMatchId);
+  useEffect(() => {
+    if (wsScorecard) {
+      applyBackendScorecard(wsScorecard);
+    }
+  }, [wsScorecard]);
+
   // Current Run Rate calculation
   const totalCompletedOvers = matchState.overNumber + matchState.ballInOver / 6;
   const currentRunRate = totalCompletedOvers > 0 ? (matchState.totalRuns / totalCompletedOvers).toFixed(2) : '0.00';
@@ -120,7 +222,6 @@ export default function ScoringConsole() {
   // SCORING ENGINE: SUBMIT BALL
   // =========================================================================
   const handleSubmitBall = () => {
-    // If a wicket was selected from the dropdown, trigger the modal if not yet filled
     if (selectedWicketType !== 'Select' && !isWicketModalOpen) {
       setWicketDetails((prev) => ({
         ...prev,
@@ -141,7 +242,52 @@ export default function ScoringConsole() {
     });
   };
 
-  const processBall = ({ runs, extras, wicketType, dismissedPlayer, nextBatsmanName }) => {
+  const processBall = async ({ runs, extras, wicketType, dismissedPlayer, nextBatsmanName }) => {
+    // 1. Prepare backend payload
+    let extras_type = 'none';
+    if (extras === 'Wide') extras_type = 'wide';
+    else if (extras === 'No Ball') extras_type = 'no_ball';
+    else if (extras === 'Bye') extras_type = 'bye';
+    else if (extras === 'Leg Bye') extras_type = 'leg_bye';
+
+    let wicket_type = 'none';
+    const isWicketBall = wicketType && wicketType !== 'Select' && wicketType !== 'None';
+    if (isWicketBall) {
+      wicket_type = wicketType.toLowerCase().replace(' ', '_');
+    }
+
+    const payload = {
+      striker_id: striker.id || striker.player_id,
+      non_striker_id: nonStriker.id || nonStriker.player_id,
+      bowler_id: matchState.currentBowler?.id || matchState.currentBowler?.player_id,
+      runs_scored: runs,
+      extras_type,
+      extras_runs: 0,
+      is_wicket: isWicketBall,
+      wicket_type,
+      dismissed_player_id: isWicketBall ? (striker.id || striker.player_id) : null,
+      next_batsman_id: isWicketBall ? (availablePlayers[0]?.player_id || null) : null
+    };
+
+
+    try {
+      if (realMatchId) {
+        const updatedScorecard = await api.scoring.recordBall(realMatchId, payload);
+        if (updatedScorecard) {
+          applyBackendScorecard(updatedScorecard);
+          showToast(`Ball logged: ${runs} run(s) recorded on backend.`);
+          // Reset controls
+          setSelectedRuns(0);
+          setSelectedExtras('None');
+          setSelectedWicketType('Select');
+          setIsWicketModalOpen(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Backend scoring error:', e);
+      showToast(`Logged locally (server sync notice: ${e.message})`);
+    }
     // Save snapshot to historyStack for undo
     const snapshot = JSON.parse(JSON.stringify(matchState));
 
@@ -309,7 +455,21 @@ export default function ScoringConsole() {
   // =========================================================================
   // CONTROL ACTIONS: UNDO, ROTATE STRIKE, END OVER, END INNINGS
   // =========================================================================
-  const handleUndo = () => {
+  const handleUndo = async () => {
+    try {
+      if (realMatchId) {
+        const updatedScorecard = await api.scoring.undoBall(realMatchId);
+        if (updatedScorecard) {
+          applyBackendScorecard(updatedScorecard);
+          showToast('Last delivery reversed on server.');
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Backend undo error:', e);
+      showToast(e.message || 'Undo delivery failed');
+    }
+
     if (matchState.historyStack.length === 0) {
       alert('No previous deliveries to undo!');
       return;
@@ -319,7 +479,7 @@ export default function ScoringConsole() {
       ...previous,
       historyStack: matchState.historyStack.slice(0, -1)
     });
-    showToast('Last ball undone successfully.');
+    showToast('Last ball undone.');
   };
 
   const handleRotateStrike = () => {
@@ -334,7 +494,6 @@ export default function ScoringConsole() {
   };
 
   const handleEndOver = () => {
-    // Round to next over
     const newOver = matchState.overNumber + 1;
     setMatchState({
       ...matchState,
@@ -348,11 +507,21 @@ export default function ScoringConsole() {
     showToast(`Over ${newOver} ended. Strike rotated.`);
   };
 
-  const handleEndInnings = () => {
+  const handleEndInnings = async () => {
     if (confirm('Are you sure you want to declare/end this innings?')) {
-      showToast(`Innings ended! Rangers scored ${matchState.totalRuns}/${matchState.wickets} in ${matchState.overNumber}.${matchState.ballInOver} overs.`);
+      try {
+        if (realMatchId) {
+          await api.scoring.endInnings(realMatchId);
+          showToast('Innings ended successfully on server.');
+          return;
+        }
+      } catch (e) {
+        alert(e.message || 'Failed to end innings');
+      }
+      showToast(`Innings ended! Rangers scored ${matchState.totalRuns}/${matchState.wickets}`);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-[#F4F7FB] flex">
