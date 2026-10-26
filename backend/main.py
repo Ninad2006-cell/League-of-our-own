@@ -28,6 +28,17 @@ def read_root():
 def health_check():
     return {"status": "healthy"}
 
+# Track 2 Routers: Live Scoring & Real-Time Matches
+from app.routers import scoring, matches
+app.include_router(scoring.router, prefix="/api/scoring")
+app.include_router(matches.router, prefix="/api/matches")
+
+# Dedicated /ws/matches/{match_id} route alias for frontend WebSocket connection
+@app.websocket("/ws/matches/{match_id}")
+async def root_match_websocket(websocket: matches.WebSocket, match_id: str):
+    await matches.match_realtime_websocket(websocket, match_id)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

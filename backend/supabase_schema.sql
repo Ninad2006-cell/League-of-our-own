@@ -5,12 +5,14 @@
 CREATE TYPE user_role AS ENUM ('user', 'scorer', 'admin');
 
 CREATE TABLE IF NOT EXISTS users (
-    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
     role user_role NOT NULL DEFAULT 'user',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
 
 -- 2. TOURNAMENTS
 CREATE TYPE tournament_level AS ENUM ('local', 'club', 'domestic', 'international');
