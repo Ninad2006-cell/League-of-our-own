@@ -38,7 +38,14 @@ app.include_router(matches.router, prefix="/api/matches")
 async def root_match_websocket(websocket: matches.WebSocket, match_id: str):
     await matches.match_realtime_websocket(websocket, match_id)
 
+# Track 3 Routers: Tournaments, Standings, Teams & Players Public API
+from app.routers import tournaments, teams, players
+app.include_router(tournaments.router, prefix="/api/tournaments")
+app.include_router(teams.router, prefix="/api/teams")
+app.include_router(players.router, prefix="/api/players")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
