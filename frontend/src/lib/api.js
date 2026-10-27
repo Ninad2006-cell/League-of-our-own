@@ -98,6 +98,16 @@ export const api = {
     getCommentary: (id) => request(`/matches/${id}/commentary`)
   },
 
+  // Real-World Cricket Live Scores (CricketData.org)
+  liveScores: {
+    get: (mode = 'live', forceRefresh = false) => {
+      const sp = new URLSearchParams();
+      if (mode) sp.append('mode', mode);
+      if (forceRefresh) sp.append('force_refresh', 'true');
+      return request(`/live-scores?${sp.toString()}`);
+    }
+  },
+
   // Scorer Operations
   scoring: {
     startMatch: (id, data) => request(`/scoring/matches/${id}/start`, {
