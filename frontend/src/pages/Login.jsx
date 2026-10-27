@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Shield, Radio, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, Shield, Radio, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2, User } from 'lucide-react';
 import { CDMSLogo } from '../components/TeamLogos';
+import { api } from '../lib/api';
 import batsmanStadiumImg from '../assets/images/batsman-stadium.jpg';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [role, setRole] = useState('admin'); // 'admin' | 'scorer'
-  const [email, setEmail] = useState('admin@cdms.com');
-  const [password, setPassword] = useState('admin123');
+  const [isLogin, setIsLogin] = useState(true); // Toggle between login and register
+  const [role, setRole] = useState('user'); // 'user' | 'scorer' | 'admin'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState(''); // For registration
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
@@ -16,21 +19,28 @@ export default function Login() {
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
 
-  // Switch role and update demo defaults
+  // Switch role and update demo defaults (only for login)
   const handleRoleChange = (newRole) => {
     setRole(newRole);
     setError('');
+    // Don't auto-fill credentials during registration
+    if (!isLogin) {
+      return;
+    }
     if (newRole === 'admin') {
       setEmail('admin@cdms.com');
       setPassword('admin123');
-    } else {
+    } else if (newRole === 'scorer') {
       setEmail('scorer@cdms.com');
       setPassword('scorer123');
+    } else {
+      setEmail('');
+      setPassword('');
     }
   };
 
   // Form submission with validation and role-based redirect
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -52,28 +62,42 @@ export default function Login() {
       setError('Password must be at least 6 characters');
       return;
     }
+    if (!isLogin && !name.trim()) {
+      setError('Please enter your name');
+      return;
+    }
 
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      let response;
+      
+      if (isLogin) {
+        // Call backend API for login
+        response = await api.login(email, password);
+      } else {
+        // Call backend API for registration
+        response = await api.register(name, email, password, role);
+      }
+      
       setIsLoading(false);
 
-      // Store dummy session
-      const userData = {
-        email,
-        role,
-        name: role === 'admin' ? 'Administrator' : 'Rohit Kumar (Scorer)',
-        token: 'cdms_mock_jwt_token_' + Date.now(),
-      };
-      localStorage.setItem('cdms_auth_user', JSON.stringify(userData));
-
+      // Get user role from response
+      const userRole = response.user.role;
+      
       // Role-based redirect logic
-      if (role === 'admin') {
+      if (userRole === 'admin') {
         navigate('/admin/dashboard');
-      } else {
+      } else if (userRole === 'scorer') {
         navigate('/scorer/console/1');
+      } else {
+        // Regular user - redirect to home
+        navigate('/');
       }
-    }, 600);
+    } catch (err) {
+      setIsLoading(false);
+      setError(err.message || isLogin ? 'Invalid email or password' : 'Registration failed');
+    }
   };
 
   return (
@@ -97,68 +121,116 @@ export default function Login() {
             <CDMSLogo className="w-14 h-14 ring-4 ring-emerald-500/20" />
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-            Sign In to CDMS
+            {isLogin ? 'Sign In to CDMS' : 'Create Account'}
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Cricket Data Management System Portal
           </p>
         </div>
 
-        {/* Role Selector Tabs */}
+        {/* Login/Register Toggle */}
         <div className="bg-slate-100 p-1 rounded-2xl flex gap-1 mb-6 border border-slate-200">
           <button
             type="button"
-            onClick={() => handleRoleChange('admin')}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-              role === 'admin'
+            onClick={() => {
+              setIsLogin(true);
+              setError('');
+            }}
+            className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+              isLogin
                 ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Shield className={`w-3.5 h-3.5 ${role === 'admin' ? 'text-emerald-600' : 'text-slate-400'}`} />
-            Administrator
+            Sign In
           </button>
-
-          <button
-            type="button"
-            onClick={() => handleRoleChange('scorer')}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-              role === 'scorer'
-                ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Radio className={`w-3.5 h-3.5 ${role === 'scorer' ? 'text-emerald-600' : 'text-slate-400'}`} />
-            Official Scorer
-          </button>
-        </div>
-
-        {/* Quick Credentials Info Box */}
-        <div className="mb-5 p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-start justify-between text-xs">
-          <div>
-            <span className="font-semibold text-emerald-800">
-              Demo {role === 'admin' ? 'Administrator' : 'Scorer'} Mode:
-            </span>
-            <p className="text-emerald-700 text-[11px] mt-0.5 font-mono">
-              {role === 'admin' ? 'admin@cdms.com / admin123' : 'scorer@cdms.com / scorer123'}
-            </p>
-          </div>
           <button
             type="button"
             onClick={() => {
-              if (role === 'admin') {
-                setEmail('admin@cdms.com');
-                setPassword('admin123');
-              } else {
-                setEmail('scorer@cdms.com');
-                setPassword('scorer123');
-              }
+              setIsLogin(false);
+              setError('');
             }}
-            className="text-[11px] font-bold text-emerald-700 underline hover:text-emerald-900"
+            className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
+              !isLogin
+                ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
           >
-            Auto-fill
+            Sign Up
           </button>
         </div>
+
+        {/* Role Selector Tabs - Only show for registration */}
+        {!isLogin && (
+          <div className="bg-slate-100 p-1 rounded-2xl flex gap-1 mb-6 border border-slate-200">
+            <button
+              type="button"
+              onClick={() => handleRoleChange('user')}
+              className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                role === 'user'
+                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <User className={`w-3.5 h-3.5 ${role === 'user' ? 'text-emerald-600' : 'text-slate-400'}`} />
+              User
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleRoleChange('scorer')}
+              className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                role === 'scorer'
+                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Radio className={`w-3.5 h-3.5 ${role === 'scorer' ? 'text-emerald-600' : 'text-slate-400'}`} />
+              Scorer
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleRoleChange('admin')}
+              className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                role === 'admin'
+                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Shield className={`w-3.5 h-3.5 ${role === 'admin' ? 'text-emerald-600' : 'text-slate-400'}`} />
+              Admin
+            </button>
+          </div>
+        )}
+
+        {/* Quick Credentials Info Box - Only show for login */}
+        {isLogin && (
+          <div className="mb-5 p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-start justify-between text-xs">
+            <div>
+              <span className="font-semibold text-emerald-800">
+                Demo Credentials:
+              </span>
+              <p className="text-emerald-700 text-[11px] mt-0.5 font-mono">
+                admin@cdms.com / admin123
+              </p>
+              <p className="text-emerald-700 text-[11px] mt-0.5 font-mono">
+                scorer@cdms.com / scorer123
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('admin@cdms.com');
+                setPassword('admin123');
+                setRole('admin');
+              }}
+              className="text-[11px] font-bold text-emerald-700 underline hover:text-emerald-900"
+            >
+              Auto-fill Admin
+            </button>
+          </div>
+        )}
 
         {/* Error notification */}
         {error && (
@@ -170,6 +242,23 @@ export default function Login() {
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Name field - Only show for registration */}
+          {!isLogin && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Full Name
+              </label>
+              <input
+                type="text"
+                required={!isLogin}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Doe"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
               Email Address
@@ -238,11 +327,11 @@ export default function Login() {
             {isLoading ? (
               <span className="inline-flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                Authenticating...
+                {isLogin ? 'Authenticating...' : 'Creating Account...'}
               </span>
             ) : (
               <>
-                <span>Sign In as {role === 'admin' ? 'Administrator' : 'Scorer'}</span>
+                <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </>
             )}
