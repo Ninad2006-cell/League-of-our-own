@@ -16,8 +16,22 @@ Usage:
 import sys
 import os
 import json
+from pathlib import Path
 import urllib.request
 import urllib.error
+
+# Automatically load environment variables from backend/env or backend/.env
+try:
+    from dotenv import load_dotenv
+    _backend_dir = Path(__file__).resolve().parent
+    if (_backend_dir / ".env").exists():
+        load_dotenv(dotenv_path=_backend_dir / ".env")
+    elif (_backend_dir / "env").exists():
+        load_dotenv(dotenv_path=_backend_dir / "env")
+    else:
+        load_dotenv()
+except ImportError:
+    pass
 
 def test_cricket_api(api_key: str):
     if not api_key or api_key == "YOUR_API_KEY":

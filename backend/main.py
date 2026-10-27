@@ -13,11 +13,21 @@ import json
 import time
 import urllib.request
 import urllib.error
+from dotenv import load_dotenv
+
+# Automatically load environment variables from backend/env or backend/.env
+_backend_dir = Path(__file__).resolve().parent
+if (_backend_dir / ".env").exists():
+    load_dotenv(dotenv_path=_backend_dir / ".env")
+elif (_backend_dir / "env").exists():
+    load_dotenv(dotenv_path=_backend_dir / "env")
+else:
+    load_dotenv()
 
 # Real-Life Cricket Live Scoring Cache & Quota Safeguard System
 # Free tier grants 100 API hits per day. Caching prevents quota depletion.
-SAMPLE_FILE = Path(__file__).resolve().parent / "sample_cricket_data.json"
-CRICKET_API_KEY = os.getenv("CRICKET_API_KEY", "f5775aef-f666-46e8-b3f7-20057593b870")
+SAMPLE_FILE = _backend_dir / "sample_cricket_data.json"
+CRICKET_API_KEY_FALLBACK = "f5775aef-f666-46e8-b3f7-20057593b870"
 CRICKET_CACHE_TTL = 300  # 5 minutes in seconds
 
 _cricket_cache = {
@@ -134,7 +144,8 @@ def get_real_world_live_scores(
         }
 
     # Mode 3: Cache Expired or force_refresh=True -> Call CricketData.org API (1 hit)
-    url = f"https://api.cricapi.com/v1/cricScore?apikey={CRICKET_API_KEY}"
+    api_key = os.getenv("CRICKET_API_KEY") or CRICKET_API_KEY_FALLBACK
+    url = f"https://api.cricapi.com/v1/cricScore?apikey={api_key}"
     try:
         req = urllib.request.Request(
             url,

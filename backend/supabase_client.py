@@ -13,7 +13,8 @@ except ModuleNotFoundError:
     from supabase import create_client, Client
 
 # Always resolve .env relative to this file so it works regardless of working directory
-ENV_FILE = Path(__file__).resolve().parent / ".env"
+_backend_dir = Path(__file__).resolve().parent
+ENV_FILE = _backend_dir / ".env" if (_backend_dir / ".env").exists() else _backend_dir / "env"
 load_dotenv(dotenv_path=ENV_FILE)
 
 SUPABASE_URL: str = os.getenv("SUPABASE_URL", "").strip()
