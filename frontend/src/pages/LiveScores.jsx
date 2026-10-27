@@ -161,10 +161,10 @@ const LiveScores = () => {
   const [activeInningsNo, setActiveInningsNo] = useState(1);
   const [commentaryFilter, setCommentaryFilter] = useState('all'); // 'all' | 'wicket' | 'boundary'
 
-  // Feature 1: Auto-Refresh Countdown & Live Poller
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState(30); // 30s | 60s | 0 (off)
-  const [countdown, setCountdown] = useState(30);
-  const [isAutoRefreshPaused, setIsAutoRefreshPaused] = useState(false);
+  // Feature 1: Auto-Refresh Countdown & Live Poller (Default: Off)
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState(0); // 0 (off) | 30s | 60s
+  const [countdown, setCountdown] = useState(0);
+  const [isAutoRefreshPaused, setIsAutoRefreshPaused] = useState(true);
 
   // Feature 6: Share Modal / Feedback Toast
   const [copiedNotification, setCopiedNotification] = useState(false);
@@ -486,34 +486,47 @@ const LiveScores = () => {
             {/* Right: Feature 1 (Auto-Refresh) + Update Score */}
             <div className="flex flex-wrap items-center gap-2.5 self-end sm:self-auto">
               
-              {/* Feature 1: Auto-Refresh Countdown Poller */}
+              {/* Feature 1: Auto-Refresh Countdown Poller (Default: Off) */}
               <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/90 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700">
                 <button
-                  onClick={() => setIsAutoRefreshPaused(!isAutoRefreshPaused)}
+                  onClick={() => {
+                    if (autoRefreshInterval === 0) {
+                      setAutoRefreshInterval(30);
+                      setIsAutoRefreshPaused(false);
+                    } else {
+                      setIsAutoRefreshPaused(!isAutoRefreshPaused);
+                    }
+                  }}
                   className={`p-1 rounded-md hover:bg-slate-200 transition-colors cursor-pointer ${
-                    isAutoRefreshPaused ? 'text-amber-600' : 'text-emerald-600'
+                    autoRefreshInterval === 0 ? 'text-slate-400' : isAutoRefreshPaused ? 'text-amber-600' : 'text-emerald-600'
                   }`}
-                  title={isAutoRefreshPaused ? 'Resume auto-refresh' : 'Pause auto-refresh'}
+                  title={autoRefreshInterval === 0 ? 'Enable auto-sync (30s)' : isAutoRefreshPaused ? 'Resume auto-sync' : 'Pause auto-sync'}
                 >
-                  {isAutoRefreshPaused ? <Play className="w-3.5 h-3.5 fill-current" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
+                  {autoRefreshInterval === 0 || isAutoRefreshPaused ? <Play className="w-3.5 h-3.5 fill-current" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
                 </button>
 
                 <div className="flex items-center gap-1 text-[11px]">
                   <span>Auto-sync:</span>
-                  <span className={`font-mono font-bold ${isAutoRefreshPaused ? 'text-slate-400' : 'text-emerald-700'}`}>
-                    {isAutoRefreshPaused ? 'PAUSED' : `${countdown}s`}
+                  <span className={`font-mono font-bold ${
+                    autoRefreshInterval === 0 ? 'text-slate-400' : isAutoRefreshPaused ? 'text-amber-600' : 'text-emerald-700'
+                  }`}>
+                    {autoRefreshInterval === 0 ? 'OFF' : isAutoRefreshPaused ? 'PAUSED' : `${countdown}s`}
                   </span>
                 </div>
 
                 <select
                   value={autoRefreshInterval}
-                  onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setAutoRefreshInterval(val);
+                    setIsAutoRefreshPaused(val === 0);
+                  }}
                   className="bg-transparent text-[11px] font-bold text-slate-600 border-none outline-none cursor-pointer pl-1"
                   title="Change auto-refresh interval"
                 >
+                  <option value={0}>Off</option>
                   <option value={30}>30s</option>
                   <option value={60}>60s</option>
-                  <option value={0}>Off</option>
                 </select>
               </div>
 
