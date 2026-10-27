@@ -14,14 +14,63 @@ router = APIRouter(tags=["Matches & Live Streaming"])
 @router.get("")
 def list_matches(status: Optional[str] = Query(None, description="Filter by status: scheduled, upcoming, live, completed")):
     """
-    Returns list of matches/fixtures with team and venue details.
+    Returns list of matches/fixtures with team, venue, tournament details and result summaries.
     """
     supabase = get_supabase_client()
     query = supabase.table("matches").select("*, team1:teams!team1_id(*), team2:teams!team2_id(*), venue:venues(*), tournament:tournaments(*)")
     if status:
         query = query.eq("status", status)
-    res = query.order("match_date", desc=True).execute()
-    return res.data or []
+    matches = query.order("match_date", desc=True).execute().data or []
+
+    # Batch-fetch innings to provide team scores
+    match_ids = [m["match_id"] for m in matches]
+    innings_by_match = {}
+    if match_ids:
+        all_innings = (
+            supabase.table("innings")
+            .select("match_id, batting_team_id, total_runs, wickets, overs_played, innings_no")
+            .in_("match_id", match_ids)
+            .order("innings_no")
+            .execute()
+            .data or []
+        )
+        for inn in all_innings:
+            mid = inn["match_id"]
+            if mid not in innings_by_match:
+                innings_by_match[mid] = []
+            innings_by_match[mid].append(inn)
+
+    for m in matches:
+        mid = m["match_id"]
+        inns = innings_by_match.get(mid, [])
+        t1_score = None
+        t2_score = None
+        for inn in inns:
+            score_str = f"{inn['total_runs']}/{inn['wickets']} ({inn['overs_played']} ov)"
+            if inn["batting_team_id"] == m.get("team1_id"):
+                t1_score = score_str
+            else:
+                t2_score = score_str
+        m["team1_score"] = t1_score
+        m["team2_score"] = t2_score
+
+        # Populate result_summary if absent
+        if not m.get("result_summary"):
+            winner_id = m.get("winner_id")
+            m_status = (m.get("status") or "").lower()
+            if winner_id:
+                t1 = m.get("team1") or {}
+                t2 = m.get("team2") or {}
+                if winner_id == t1.get("team_id"):
+                    m["result_summary"] = f"{t1.get('team_name', 'Team 1')} won"
+                elif winner_id == t2.get("team_id"):
+                    m["result_summary"] = f"{t2.get('team_name', 'Team 2')} won"
+            elif m_status == "live":
+                m["result_summary"] = "Match in progress"
+            elif m_status == "completed":
+                m["result_summary"] = "Match completed"
+
+    return matches
 
 
 

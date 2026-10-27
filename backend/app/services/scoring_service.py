@@ -17,7 +17,13 @@ from supabase_client import get_supabase_client
 
 class ScoringService:
     def __init__(self):
-        self.supabase = get_supabase_client()
+        self._supabase = None
+
+    @property
+    def supabase(self):
+        if self._supabase is None:
+            self._supabase = get_supabase_client()
+        return self._supabase
 
     def get_match(self, match_id: str) -> Dict[str, Any]:
         res = self.supabase.table("matches").select("*, team1:teams!team1_id(*), team2:teams!team2_id(*), venue:venues(*), tournament:tournaments(*)").eq("match_id", match_id).single().execute()

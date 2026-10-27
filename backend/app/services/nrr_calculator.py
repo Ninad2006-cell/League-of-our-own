@@ -49,11 +49,12 @@ class NRRCalculator:
 
         # Fetch tournament teams
         # 1. First check tournament_teams junction table or teams playing in matches of this tournament
-        t_teams = supabase.table("tournament_teams").select("team_id, team:team_id(*)").eq("tournament_id", tournament_id).execute().data or []
+        t_teams_raw = supabase.table("tournament_teams").select("team_id").eq("tournament_id", tournament_id).execute().data or []
+        team_ids_from_junction = [entry["team_id"] for entry in t_teams_raw]
         teams_dict: Dict[str, Dict[str, Any]] = {}
-        for entry in t_teams:
-            if entry.get("team"):
-                t = entry["team"]
+        if team_ids_from_junction:
+            teams_data = supabase.table("teams").select("*").in_("team_id", team_ids_from_junction).execute().data or []
+            for t in teams_data:
                 teams_dict[t["team_id"]] = t
 
         # Fetch matches in tournament
@@ -72,6 +73,14 @@ class NRRCalculator:
                 teams_dict[m["team1"]["team_id"]] = m["team1"]
             if m.get("team2") and m["team2"]["team_id"] not in teams_dict:
                 teams_dict[m["team2"]["team_id"]] = m["team2"]
+
+        # Also check points_table table if tournament has seeded teams
+        pt_records = supabase.table("points_table").select("team_id").eq("tournament_id", tournament_id).execute().data or []
+        pt_team_ids = [r["team_id"] for r in pt_records if r.get("team_id") not in teams_dict]
+        if pt_team_ids:
+            pt_teams_data = supabase.table("teams").select("*").in_("team_id", pt_team_ids).execute().data or []
+            for t in pt_teams_data:
+                teams_dict[t["team_id"]] = t
 
         # Fetch all completed innings for these matches
         match_ids = [m["match_id"] for m in matches]

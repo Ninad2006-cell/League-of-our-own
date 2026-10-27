@@ -13,7 +13,14 @@ class StatsEngine:
     """
 
     def __init__(self):
-        self.supabase = get_supabase_client()
+        # Lazy client initialization to avoid import-time failures
+        self._supabase = None
+
+    @property
+    def supabase(self):
+        if self._supabase is None:
+            self._supabase = get_supabase_client()
+        return self._supabase
 
     def get_player_career_stats(self, player_id: str) -> Dict[str, Any]:
         """

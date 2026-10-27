@@ -31,7 +31,8 @@ const Tournaments = () => {
         if (!isMounted) return;
         setTournaments(data);
         if (data.length > 0) {
-          setSelectedTournament(data[0]);
+          const preferred = data.find((t) => (t.matches_count || 0) > 0 || (t.teams_count || 0) > 0) || data[0];
+          setSelectedTournament(preferred);
         }
       } catch (err) {
         if (!isMounted) return;

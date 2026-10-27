@@ -460,28 +460,182 @@ const LiveScores = () => {
           </div>
         )}
 
-        {/* Tab 3: Scorecard & Tab 4: Stats */}
-        {(activeTab === 'Scorecard' || activeTab === 'Stats') && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
-            <h3 className="text-sm font-extrabold text-slate-900 pb-3 border-b border-slate-100 mb-4">
+        {/* Tab 3: Detailed Scorecard */}
+        {activeTab === 'Scorecard' && (
+          <div className="space-y-5">
+            {/* Batting Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
+              <h3 className="text-sm font-extrabold text-slate-900 pb-3 border-b border-slate-100 mb-4 flex items-center justify-between">
+                <span>Innings Batting Scorecard</span>
+                <span className="text-xs text-slate-400 font-normal">Active Crease</span>
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 text-xs uppercase tracking-wider">
+                      <th className="py-2.5 px-3">Batter</th>
+                      <th className="py-2.5 px-3">Status</th>
+                      <th className="py-2.5 px-3 text-right">R</th>
+                      <th className="py-2.5 px-3 text-right">B</th>
+                      <th className="py-2.5 px-3 text-right">4s</th>
+                      <th className="py-2.5 px-3 text-right">6s</th>
+                      <th className="py-2.5 px-3 text-right">SR</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {striker && (
+                      <tr className="hover:bg-slate-50/80">
+                        <td className="py-3 px-3 font-bold text-slate-900 flex items-center gap-1.5">
+                          <span>{striker.name}</span>
+                          <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-black">*</span>
+                        </td>
+                        <td className="py-3 px-3 text-emerald-700 font-medium text-xs">Batting (Striker)</td>
+                        <td className="py-3 px-3 text-right font-black text-slate-900">{striker.runs}</td>
+                        <td className="py-3 px-3 text-right text-slate-600">{striker.balls}</td>
+                        <td className="py-3 px-3 text-right text-slate-600">{striker.fours}</td>
+                        <td className="py-3 px-3 text-right text-slate-600">{striker.sixes}</td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">{striker.strike_rate}</td>
+                      </tr>
+                    )}
+                    {nonStriker && (
+                      <tr className="hover:bg-slate-50/80">
+                        <td className="py-3 px-3 font-bold text-slate-900">{nonStriker.name}</td>
+                        <td className="py-3 px-3 text-slate-500 font-medium text-xs">Batting (Non-striker)</td>
+                        <td className="py-3 px-3 text-right font-black text-slate-900">{nonStriker.runs}</td>
+                        <td className="py-3 px-3 text-right text-slate-600">{nonStriker.balls}</td>
+                        <td className="py-3 px-3 text-right text-slate-600">{nonStriker.fours}</td>
+                        <td className="py-3 px-3 text-right text-slate-600">{nonStriker.sixes}</td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">{nonStriker.strike_rate}</td>
+                      </tr>
+                    )}
+                    {!striker && !nonStriker && (
+                      <tr>
+                        <td colSpan="7" className="py-6 text-center text-slate-400 text-xs">
+                          Innings scorecard will update as deliveries are recorded.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Bowling Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
+              <h3 className="text-sm font-extrabold text-slate-900 pb-3 border-b border-slate-100 mb-4 flex items-center justify-between">
+                <span>Innings Bowling Figures</span>
+                <span className="text-xs text-slate-400 font-normal">Active Spell</span>
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 text-xs uppercase tracking-wider">
+                      <th className="py-2.5 px-3">Bowler</th>
+                      <th className="py-2.5 px-3 text-right">O</th>
+                      <th className="py-2.5 px-3 text-right">M</th>
+                      <th className="py-2.5 px-3 text-right">R</th>
+                      <th className="py-2.5 px-3 text-right">W</th>
+                      <th className="py-2.5 px-3 text-right">ECO</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentBowler ? (
+                      <tr className="hover:bg-slate-50/80 font-medium">
+                        <td className="py-3 px-3 font-bold text-slate-900">{currentBowler.name}</td>
+                        <td className="py-3 px-3 text-right font-bold text-slate-800">{currentBowler.overs}</td>
+                        <td className="py-3 px-3 text-right text-slate-600">{currentBowler.maidens || 0}</td>
+                        <td className="py-3 px-3 text-right font-bold text-slate-800">{currentBowler.runs}</td>
+                        <td className="py-3 px-3 text-right font-black text-rose-600">{currentBowler.wickets}</td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-800">{currentBowler.economy}</td>
+                      </tr>
+                    ) : (
+                      <tr>
+                        <td colSpan="6" className="py-6 text-center text-slate-400 text-xs">
+                          Bowler figures ready on active delivery.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Delivery Event Log */}
+            {scorecard?.recent_balls_log && scorecard.recent_balls_log.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
+                <h3 className="text-sm font-extrabold text-slate-900 pb-3 border-b border-slate-100 mb-4">
+                  Recent Deliveries Breakdown
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 uppercase tracking-wider text-[11px]">
+                        <th className="py-2 px-3">Over</th>
+                        <th className="py-2 px-3">Bowler</th>
+                        <th className="py-2 px-3">Batsman</th>
+                        <th className="py-2 px-3 text-center">Runs</th>
+                        <th className="py-2 px-3">Extras</th>
+                        <th className="py-2 px-3">Wicket</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {scorecard.recent_balls_log.map((ball) => (
+                        <tr key={ball.id} className="hover:bg-slate-50/80">
+                          <td className="py-2 px-3 font-mono font-bold text-slate-700">{ball.over}.{ball.ball}</td>
+                          <td className="py-2 px-3 font-medium text-slate-900">{ball.bowler}</td>
+                          <td className="py-2 px-3 text-slate-700">{ball.batsman}</td>
+                          <td className="py-2 px-3 text-center font-bold text-slate-900">{ball.runs}</td>
+                          <td className="py-2 px-3 text-slate-500">{ball.extras}</td>
+                          <td className={`py-2 px-3 font-bold ${ball.wicket !== '-' ? 'text-rose-600' : 'text-slate-400'}`}>
+                            {ball.wicket}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 4: Match Detailed Analytics & Stats */}
+        {activeTab === 'Stats' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 space-y-6">
+            <h3 className="text-sm font-extrabold text-slate-900 pb-3 border-b border-slate-100">
               Match Detailed Analytics
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="text-xs text-slate-400 block font-semibold">Total Runs</span>
-                <span className="text-xl font-black text-slate-900">{scorecard?.total_runs || 0}</span>
+                <span className="text-2xl font-black text-slate-900">{scorecard?.total_runs || 0}</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="text-xs text-slate-400 block font-semibold">Current Run Rate</span>
-                <span className="text-xl font-black text-emerald-600">{scorecard?.crr || '0.00'}</span>
+                <span className="text-2xl font-black text-emerald-600">{scorecard?.crr || '0.00'}</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="text-xs text-slate-400 block font-semibold">Overs Played</span>
-                <span className="text-xl font-black text-slate-900">{scorecard?.overs_played || '0.0'}</span>
+                <span className="text-2xl font-black text-slate-900">{scorecard?.overs_played || '0.0'}</span>
               </div>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="text-xs text-slate-400 block font-semibold">Target Required</span>
-                <span className="text-xl font-black text-blue-600">{scorecard?.target || '—'}</span>
+                <span className="text-2xl font-black text-blue-600">{scorecard?.target || '—'}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/60">
+                <span className="text-xs text-slate-400 font-semibold block">Required Run Rate</span>
+                <span className="text-xl font-black text-slate-800 mt-1 block">{scorecard?.rrr || '—'}</span>
+              </div>
+              <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/60">
+                <span className="text-xs text-slate-400 font-semibold block">Wickets Lost</span>
+                <span className="text-xl font-black text-rose-600 mt-1 block">{scorecard?.wickets || 0}</span>
+              </div>
+              <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/60">
+                <span className="text-xs text-slate-400 font-semibold block">Overs Quota</span>
+                <span className="text-xl font-black text-slate-800 mt-1 block">{scorecard?.overs_limit || 20} Ov</span>
               </div>
             </div>
           </div>
