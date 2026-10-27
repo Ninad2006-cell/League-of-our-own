@@ -248,6 +248,18 @@ const LiveScores = () => {
     setCountdown(autoRefreshInterval);
   }, [autoRefreshInterval]);
 
+  // When selectedMatch changes, intelligently pick the active innings
+  useEffect(() => {
+    if (!selectedMatch) return;
+    if (selectedMatch.t1s && !selectedMatch.t2s) {
+      setActiveInningsNo(1);
+    } else if (!selectedMatch.t1s && selectedMatch.t2s) {
+      setActiveInningsNo(2);
+    } else {
+      setActiveInningsNo(1);
+    }
+  }, [selectedMatch?.id]);
+
   // When matchFilter changes, pick first match if current is not in active tab
   useEffect(() => {
     if (!apiResponse) return;
@@ -968,14 +980,57 @@ const LiveScores = () => {
                     const battingTeam = activeInningsNo === 1 ? detailedAnalytics.team1 : detailedAnalytics.team2;
                     const bowlingTeam = activeInningsNo === 1 ? detailedAnalytics.team2 : detailedAnalytics.team1;
 
-                    if (!currentInnings) {
+                    if (!currentInnings || !currentInnings.hasScore) {
+                      const squadList = battingTeam.squad || [];
                       return (
-                        <div className="py-12 text-center bg-slate-50 rounded-2xl border border-slate-200/80 p-6">
-                          <Activity className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                          <h4 className="text-sm font-extrabold text-slate-800">Innings Not Yet Commenced</h4>
-                          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                            {battingTeam.name} has not started batting yet. Detailed player scorecards and bowling figures will populate once the innings commences.
-                          </p>
+                        <div className="space-y-5">
+                          <div className="bg-slate-50 rounded-2xl border border-slate-200/80 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <Activity className="w-5 h-5 text-emerald-600 shrink-0" />
+                              <div>
+                                <h4 className="text-sm font-extrabold text-slate-800">
+                                  {battingTeam.name} — Projected Lineup & Squad
+                                </h4>
+                                <p className="text-xs text-slate-500">
+                                  Innings has not yet commenced. Official squad and batting order listed below.
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3 py-1 rounded-xl shadow-xs self-start sm:self-auto">
+                              11 Players Listed
+                            </span>
+                          </div>
+
+                          {/* Squad Table / Lineup */}
+                          <div className="overflow-x-auto rounded-2xl border border-slate-200/90 shadow-2xs">
+                            <table className="w-full text-left text-xs sm:text-sm">
+                              <thead>
+                                <tr className="bg-slate-50/80 text-slate-500 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider">
+                                  <th className="py-3 px-4">#</th>
+                                  <th className="py-3 px-4">Player</th>
+                                  <th className="py-3 px-4">Role</th>
+                                  <th className="py-3 px-4">Playing Style</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 font-medium">
+                                {squadList.map((player, idx) => (
+                                  <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
+                                    <td className="py-2.5 px-4 text-slate-400 font-mono text-xs">{idx + 1}</td>
+                                    <td className="py-2.5 px-4 font-bold text-slate-900 flex items-center gap-2">
+                                      <span>{player.name}</span>
+                                      {player.captain && (
+                                        <span className="text-[10px] bg-amber-100 text-amber-800 font-black px-1.5 py-0.5 rounded">
+                                          C
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="py-2.5 px-4 text-xs capitalize text-slate-600 font-semibold">{player.role}</td>
+                                    <td className="py-2.5 px-4 text-xs text-slate-500">{player.style || '—'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       );
                     }
