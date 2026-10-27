@@ -1,8 +1,16 @@
 import os
+import sys
 from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
-from supabase import create_client, Client
+
+try:
+    from supabase import create_client, Client
+except ModuleNotFoundError:
+    _venv_site = Path(__file__).resolve().parent / "venv" / "Lib" / "site-packages"
+    if _venv_site.exists() and str(_venv_site) not in sys.path:
+        sys.path.insert(0, str(_venv_site))
+    from supabase import create_client, Client
 
 # Always resolve .env relative to this file so it works regardless of working directory
 ENV_FILE = Path(__file__).resolve().parent / ".env"

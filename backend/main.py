@@ -1,3 +1,11 @@
+import sys
+from pathlib import Path
+
+# Automatically include local venv packages if executed outside virtualenv
+_venv_site = Path(__file__).resolve().parent / "venv" / "Lib" / "site-packages"
+if _venv_site.exists() and str(_venv_site) not in sys.path:
+    sys.path.insert(0, str(_venv_site))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
