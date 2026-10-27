@@ -285,3 +285,220 @@ export function generateMatchDetailedAnalytics(match) {
     }
   };
 }
+
+// 1. Calculate live Win Probability & Momentum Gauge
+export function calculateWinProbability(analytics, statusStr = '') {
+  if (!analytics) return { team1: 50, team2: 50, leader: 'Evenly poised (50-50)', completed: false };
+
+  const status = (statusStr || '').toLowerCase();
+  const t1Name = analytics.team1.name;
+  const t2Name = analytics.team2.name;
+
+  // Completed match winner
+  if (status.includes('won by') || status.includes('win by')) {
+    if (status.includes(t1Name.toLowerCase()) || status.includes(analytics.team1.code.toLowerCase())) {
+      return { team1: 100, team2: 0, leader: `${t1Name} Won`, completed: true };
+    }
+    if (status.includes(t2Name.toLowerCase()) || status.includes(analytics.team2.code.toLowerCase())) {
+      return { team1: 0, team2: 100, leader: `${t2Name} Won`, completed: true };
+    }
+  }
+
+  const inn1 = analytics.team1.innings;
+  const inn2 = analytics.team2.innings;
+
+  // Neither team has batted
+  if (!inn1 && !inn2) {
+    return { team1: 50, team2: 50, leader: 'Even 50-50 pre-match outlook', completed: false };
+  }
+
+  // Innings 1 in progress
+  if (inn1 && !inn2) {
+    const runs = inn1.totalRuns;
+    const wkts = inn1.totalWickets;
+    const parScore = analytics.format === 'T20' ? 165 : analytics.format === 'ODI' ? 260 : 320;
+    const runsFactor = Math.min(25, Math.max(-25, Math.round(((runs - (parScore * 0.6)) / parScore) * 40)));
+    const wktFactor = (5 - wkts) * 3;
+    let t1Prob = 50 + runsFactor + wktFactor;
+    t1Prob = Math.min(85, Math.max(15, t1Prob));
+    const t2Prob = 100 - t1Prob;
+    return {
+      team1: t1Prob,
+      team2: t2Prob,
+      leader: t1Prob >= 50 ? `${t1Name} in command (${t1Prob}%)` : `${t2Name} bowling edge (${t2Prob}%)`,
+      completed: false
+    };
+  }
+
+  // Innings 2 in progress / chase underway
+  if (inn1 && inn2) {
+    const target = inn1.totalRuns + 1;
+    const chased = inn2.totalRuns;
+    const wktsLost = inn2.totalWickets;
+    const remainingRuns = Math.max(0, target - chased);
+
+    const maxOvers = analytics.format === 'T20' ? 20 : analytics.format === 'ODI' ? 50 : 90;
+    const oversPlayed = parseFloat(inn2.overs) || 10;
+    const remainingOvers = Math.max(0.5, maxOvers - oversPlayed);
+    const rrr = remainingRuns / remainingOvers;
+    const crr = parseFloat(inn2.crr) || 6.0;
+
+    let t2Prob = 50 + (crr - rrr) * 8 - (wktsLost * 5);
+    t2Prob = Math.min(95, Math.max(5, Math.round(t2Prob)));
+    const t1Prob = 100 - t2Prob;
+
+    return {
+      team1: t1Prob,
+      team2: t2Prob,
+      target,
+      remainingRuns,
+      rrr: rrr.toFixed(2),
+      leader: t2Prob >= 50 
+        ? `${t2Name} ahead in chase (${t2Prob}%)` 
+        : `${t1Name} defending with wicket pressure (${t1Prob}%)`,
+      completed: false
+    };
+  }
+
+  return { team1: 50, team2: 50, leader: 'Match evenly poised (50-50)', completed: false };
+}
+
+// 2. Key Performers & Player of the Match Candidate
+export function calculateKeyPerformers(analytics) {
+  if (!analytics) return null;
+
+  const allBatters = [];
+  const allBowlers = [];
+
+  if (analytics.team1.innings) {
+    analytics.team1.innings.batting.forEach(b => allBatters.push({ ...b, team: analytics.team1.name }));
+    analytics.team1.innings.bowling.forEach(b => allBowlers.push({ ...b, team: analytics.team2.name }));
+  }
+  if (analytics.team2.innings) {
+    analytics.team2.innings.batting.forEach(b => allBatters.push({ ...b, team: analytics.team2.name }));
+    analytics.team2.innings.bowling.forEach(b => allBowlers.push({ ...b, team: analytics.team1.name }));
+  }
+
+  if (allBatters.length === 0 && allBowlers.length === 0) return null;
+
+  // Best Batter: max runs, then strike rate
+  const sortedBatters = [...allBatters].sort((a, b) => b.runs - a.runs || parseFloat(b.sr) - parseFloat(a.sr));
+  const topBatter = sortedBatters[0] || null;
+
+  // Best Bowler: max wickets, then min economy
+  const sortedBowlers = [...allBowlers].sort((a, b) => b.wickets - a.wickets || parseFloat(a.economy) - parseFloat(b.economy));
+  const topBowler = sortedBowlers[0] || null;
+
+  // Player of the Match candidate (Impact score)
+  let potm = null;
+  let bestScore = -1;
+
+  allBatters.forEach(b => {
+    const score = b.runs * 1.0 + (b.runs > 50 ? 20 : 0) + (b.fours * 1) + (b.sixes * 2);
+    if (score > bestScore) {
+      bestScore = score;
+      potm = {
+        name: b.name,
+        team: b.team,
+        type: 'Batter',
+        stat: `${b.runs} runs (${b.balls} balls, ${b.fours}x4, ${b.sixes}x6)`,
+        subStat: `Strike Rate: ${b.sr}`
+      };
+    }
+  });
+
+  allBowlers.forEach(bw => {
+    const score = (bw.wickets * 28.0) + (bw.maidens * 10) - (parseFloat(bw.economy) * 2);
+    if (score > bestScore) {
+      bestScore = score;
+      potm = {
+        name: bw.name,
+        team: bw.team,
+        type: 'Bowler',
+        stat: `${bw.wickets} wickets for ${bw.runs} runs`,
+        subStat: `Overs: ${bw.overs} • Economy: ${bw.economy}`
+      };
+    }
+  });
+
+  return { topBatter, topBowler, playerOfTheMatch: potm };
+}
+
+// 3. Realistic Ball-by-Ball Match Commentary Generator
+export function generateMatchCommentary(match, analytics) {
+  if (!analytics || !match) return [];
+
+  const inn = analytics.team2.innings || analytics.team1.innings;
+  if (!inn) return [];
+
+  const commentaryList = [];
+  const baseOver = parseFloat(inn.overs) || 20;
+
+  const phrases = {
+    wicket: [
+      "OUT! Clean bowled! What a delivery, nips back in sharply off the seam and crashes into middle and off!",
+      "OUT! Caught at deep midwicket! He tried to clear the boundary but didn't get enough elevation. Safe hands in the deep!",
+      "OUT! Edged and taken by the keeper! Faintest of nicks through to the gloves. Huge breakthrough!",
+      "OUT! Trapped LBW! Loud appeal and up goes the finger! Plumb in front of middle stump!"
+    ],
+    four: [
+      "FOUR! Cracking shot through covers! Leans onto the front foot and caresses it past mid-off with immaculate timing.",
+      "FOUR! Pulled away with authority! Short ball sits up nicely and dispatched to the square leg fence.",
+      "FOUR! Up and over backward point! Width offered outside off and carved over the infield for four runs."
+    ],
+    six: [
+      "SIX! Massive blow! Down the track, meets it on the half-volley and launches it high over long-on into the upper tier!",
+      "SIX! Smoked into the stands! Clean swing through the line of the ball and that sails 85 meters into the crowd!"
+    ],
+    normal: [
+      "Good length delivery on middle, guided softly towards short third man for a quick single.",
+      "Slower ball on off stump, tapped gently to mid-on and they hustle through for one.",
+      "Beaten outside off! Tempting line outside the fourth stump, batter has a feel and misses.",
+      "Full delivery pushed into the gap at midwicket. Good running between the wickets pushes the score along."
+    ]
+  };
+
+  // Wicket balls from fall of wickets
+  if (inn.fallOfWickets && inn.fallOfWickets.length > 0) {
+    inn.fallOfWickets.forEach((fow, idx) => {
+      commentaryList.push({
+        id: `comm-wkt-${idx}`,
+        over: fow.over,
+        ballType: 'WICKET',
+        score: fow.score,
+        badgeColor: 'bg-rose-500 text-white',
+        text: `${phrases.wicket[idx % phrases.wicket.length]} ${fow.player} departs.`
+      });
+    });
+  }
+
+  // Boundary balls
+  for (let i = 0; i < Math.min(8, inn.batting[0]?.fours || 5); i++) {
+    const overTime = (Math.max(1, baseOver - (i * 3.5))).toFixed(1);
+    const isSix = i % 3 === 0;
+    const type = isSix ? 'SIX' : 'FOUR';
+    commentaryList.push({
+      id: `comm-bdry-${i}`,
+      over: overTime,
+      ballType: type,
+      score: `${Math.round(inn.totalRuns * (0.3 + i * 0.08))}/${Math.min(inn.totalWickets, Math.floor(i / 2))}`,
+      badgeColor: isSix ? 'bg-indigo-600 text-white' : 'bg-emerald-600 text-white',
+      text: isSix ? phrases.six[i % phrases.six.length] : phrases.four[i % phrases.four.length]
+    });
+  }
+
+  // Regular deliveries to fill realistic flow
+  for (let j = 0; j < 6; j++) {
+    const overTime = (Math.max(0.1, baseOver - (j * 1.8))).toFixed(1);
+    commentaryList.push({
+      id: `comm-norm-${j}`,
+      over: overTime,
+      ballType: '1 RUN',
+      score: `${Math.round(inn.totalRuns * (0.5 + j * 0.08))}/${Math.min(inn.totalWickets, 1 + Math.floor(j / 3))}`,
+      badgeColor: 'bg-slate-100 text-slate-800 border border-slate-200',
+      text: phrases.normal[j % phrases.normal.length]
+    });
+  }
+
+  return commentaryList.sort((a, b) => parseFloat(b.over) - parseFloat(a.over));
+}

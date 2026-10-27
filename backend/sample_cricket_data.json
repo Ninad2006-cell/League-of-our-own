@@ -1038,7 +1038,7 @@
       "dateTimeGMT": "2026-10-27T14:30:00",
       "matchType": "t20",
       "status": "Afghanistan won by 37 runs",
-      "ms": "live",
+      "ms": "result",
       "t1": "Afghanistan [AFG]",
       "t2": "Zimbabwe [ZIM]",
       "t1s": "177/10 (19.5)",
@@ -1954,12 +1954,12 @@
   ],
   "status": "success",
   "info": {
-    "hitsToday": 3,
+    "hitsToday": 4,
     "hitsUsed": 1,
     "hitsLimit": 100,
     "credits": 0,
-    "server": 25,
-    "queryTime": 85.3712,
+    "server": 2,
+    "queryTime": 86.4093,
     "s": 0
   }
 }

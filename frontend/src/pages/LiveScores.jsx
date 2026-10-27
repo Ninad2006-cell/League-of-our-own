@@ -21,12 +21,26 @@ import {
   Target,
   BarChart2,
   Info,
-  CheckCircle2
+  CheckCircle2,
+  Share2,
+  Copy,
+  Check,
+  Play,
+  Pause,
+  Award,
+  Flame,
+  MessageSquare,
+  Send
 } from 'lucide-react';
 import api from '../lib/api';
 import useLiveMatch from '../lib/useLiveMatch';
 import sampleCricketData from '../data/sample_cricket_data.json';
-import { generateMatchDetailedAnalytics } from '../lib/scorecardGenerator';
+import { 
+  generateMatchDetailedAnalytics,
+  calculateWinProbability,
+  calculateKeyPerformers,
+  generateMatchCommentary
+} from '../lib/scorecardGenerator';
 
 // Helper to extract clean team name and short code from CricAPI format: "Nagaland [NGL]"
 function parseTeam(rawName, fallbackIndex = 1) {
@@ -146,9 +160,19 @@ const LiveScores = () => {
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Selected Match Detail Tab: 'scorecard' | 'stats' | 'info' | 'directory'
+  // Selected Match Detail Tab: 'scorecard' | 'commentary' | 'stats' | 'info' | 'directory'
   const [detailTab, setDetailTab] = useState('scorecard');
   const [activeInningsNo, setActiveInningsNo] = useState(1);
+  const [commentaryFilter, setCommentaryFilter] = useState('all'); // 'all' | 'wicket' | 'boundary'
+
+  // Feature 1: Auto-Refresh Countdown & Live Poller
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState(30); // 30s | 60s | 0 (off)
+  const [countdown, setCountdown] = useState(30);
+  const [isAutoRefreshPaused, setIsAutoRefreshPaused] = useState(false);
+
+  // Feature 6: Share Modal / Feedback Toast
+  const [copiedNotification, setCopiedNotification] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Primary view selector: 'real-world' vs 'cdms-league'
   const [activeView, setActiveView] = useState(routeMatchId ? 'cdms-league' : 'real-world');
@@ -160,7 +184,7 @@ const LiveScores = () => {
   const fetchLiveScores = async (mode = dataMode, forceRefresh = false) => {
     if (forceRefresh) {
       setIsRefreshing(true);
-    } else {
+    } else if (!apiResponse) {
       setLoading(true);
     }
     setFetchError(null);
@@ -205,6 +229,28 @@ const LiveScores = () => {
   useEffect(() => {
     fetchLiveScores(dataMode, false);
   }, [dataMode]);
+
+  // Feature 1: Auto-Refresh countdown effect
+  useEffect(() => {
+    if (autoRefreshInterval === 0 || isAutoRefreshPaused) return;
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          fetchLiveScores(dataMode, false);
+          return autoRefreshInterval;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [autoRefreshInterval, isAutoRefreshPaused, dataMode]);
+
+  // Reset countdown whenever interval changes
+  useEffect(() => {
+    setCountdown(autoRefreshInterval);
+  }, [autoRefreshInterval]);
 
   // When matchFilter changes, pick first match if current is not in active tab
   useEffect(() => {
@@ -256,10 +302,47 @@ const LiveScores = () => {
     return generateMatchDetailedAnalytics(selectedMatch);
   }, [selectedMatch]);
 
+  // Feature 3: Win Probability & Momentum Gauge
+  const winProbability = useMemo(() => {
+    if (!selectedMatch || !detailedAnalytics) return null;
+    return calculateWinProbability(detailedAnalytics, selectedMatch.status);
+  }, [selectedMatch, detailedAnalytics]);
+
+  // Feature 7: Key Performers & Player of the Match
+  const keyPerformers = useMemo(() => {
+    if (!detailedAnalytics) return null;
+    return calculateKeyPerformers(detailedAnalytics);
+  }, [detailedAnalytics]);
+
+  // Feature 4: Ball-by-ball Live Commentary stream
+  const commentaryList = useMemo(() => {
+    if (!selectedMatch || !detailedAnalytics) return [];
+    const list = generateMatchCommentary(selectedMatch, detailedAnalytics);
+    if (commentaryFilter === 'wicket') {
+      return list.filter(c => c.ballType === 'WICKET');
+    }
+    if (commentaryFilter === 'boundary') {
+      return list.filter(c => c.ballType === 'FOUR' || c.ballType === 'SIX');
+    }
+    return list;
+  }, [selectedMatch, detailedAnalytics, commentaryFilter]);
+
   // Helper for Hero Scorecard Team details
   const t1 = useMemo(() => parseTeam(selectedMatch?.t1, 1), [selectedMatch?.t1]);
   const t2 = useMemo(() => parseTeam(selectedMatch?.t2, 2), [selectedMatch?.t2]);
   const matchTiming = useMemo(() => formatMatchDateTime(selectedMatch?.dateTimeGMT), [selectedMatch?.dateTimeGMT]);
+
+  // Feature 6: Share snippet generator
+  const shareText = useMemo(() => {
+    if (!selectedMatch) return '';
+    return `🏏 ${selectedMatch.series || 'Cricket Match'}\n${t1.name} (${selectedMatch.t1s || '-'}) vs ${t2.name} (${selectedMatch.t2s || '-'})\nStatus: ${selectedMatch.status || 'Live'}\nFollow live on League Of Our Own (CDMS)`;
+  }, [selectedMatch, t1, t2]);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareText);
+    setCopiedNotification(true);
+    setTimeout(() => setCopiedNotification(false), 2500);
+  };
 
   // ------------------------------------------------------------------
   // CDMS League Match Integration (Internal database match & WebSocket)
@@ -293,7 +376,7 @@ const LiveScores = () => {
   }, [activeView, cdmsMatchId]);
 
   return (
-    <div className="min-h-screen bg-[#eef2f6] pb-20 font-sans text-slate-800">
+    <div className="min-h-screen bg-[#eef2f6] pb-24 font-sans text-slate-800">
       
       {/* ============================================================== */}
       {/* 1. TOP HERO BANNER & HEADER */}
@@ -322,7 +405,7 @@ const LiveScores = () => {
                 Real-World Cricket Live Scores & Scorecard
               </h1>
               <p className="text-xs sm:text-sm text-slate-300 max-w-2xl mt-1">
-                Up-to-date fixtures, team logos, and live scores across Ranji Trophy, WBBL, ICC & International cricket.
+                Up-to-date fixtures, team logos, detailed player scorecards, live commentary, and win probabilities.
               </p>
             </div>
 
@@ -364,8 +447,8 @@ const LiveScores = () => {
       {activeView === 'real-world' && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 -mt-4">
 
-          {/* Quota Safeguard & API Status Bar */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* Quota Safeguard, Auto-Refresh & Mode Bar */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             
             {/* Left: Source, Cache Age & Quota Badge */}
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs">
@@ -397,9 +480,40 @@ const LiveScores = () => {
               </span>
             </div>
 
-            {/* Right: Mode Toggle & Refresh Button */}
-            <div className="flex items-center gap-2 self-end sm:self-auto">
+            {/* Right: Feature 1 (Auto-Refresh) + Mode Toggle + Update Score */}
+            <div className="flex flex-wrap items-center gap-2.5 self-end lg:self-auto">
               
+              {/* Feature 1: Auto-Refresh Countdown Poller */}
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200/90 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700">
+                <button
+                  onClick={() => setIsAutoRefreshPaused(!isAutoRefreshPaused)}
+                  className={`p-1 rounded-md hover:bg-slate-200 transition-colors ${
+                    isAutoRefreshPaused ? 'text-amber-600' : 'text-emerald-600'
+                  }`}
+                  title={isAutoRefreshPaused ? 'Resume auto-refresh' : 'Pause auto-refresh'}
+                >
+                  {isAutoRefreshPaused ? <Play className="w-3.5 h-3.5 fill-current" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
+                </button>
+
+                <div className="flex items-center gap-1 text-[11px]">
+                  <span>Auto-sync:</span>
+                  <span className={`font-mono font-bold ${isAutoRefreshPaused ? 'text-slate-400' : 'text-emerald-700'}`}>
+                    {isAutoRefreshPaused ? 'PAUSED' : `${countdown}s`}
+                  </span>
+                </div>
+
+                <select
+                  value={autoRefreshInterval}
+                  onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
+                  className="bg-transparent text-[11px] font-bold text-slate-600 border-none outline-none cursor-pointer pl-1"
+                  title="Change auto-refresh interval"
+                >
+                  <option value={30}>30s</option>
+                  <option value={60}>60s</option>
+                  <option value={0}>Off</option>
+                </select>
+              </div>
+
               {/* Mode Toggle: Live API vs Sample */}
               <div className="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200 text-xs font-bold">
                 <button
@@ -601,10 +715,10 @@ const LiveScores = () => {
           </div>
 
           {/* ============================================================== */}
-          {/* 4. DYNAMIC HERO SCORECARD */}
+          {/* 4. DYNAMIC HERO SCORECARD & LIVE MOMENTUM BAR */}
           {/* ============================================================== */}
           {selectedMatch && (
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-200/90 overflow-hidden">
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-200/90 overflow-hidden relative">
               
               {/* Hero Top Ribbon */}
               <div className="bg-slate-900 text-white px-6 py-4 flex flex-wrap items-center justify-between gap-3">
@@ -624,6 +738,7 @@ const LiveScores = () => {
 
                 <div className="flex items-center gap-2">
                   <FormatBadge type={selectedMatch.matchType} />
+                  
                   <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider ${
                     (selectedMatch.ms || '').toLowerCase() === 'live' || (matchFilter === 'live')
                       ? 'bg-emerald-500 text-slate-950'
@@ -634,6 +749,15 @@ const LiveScores = () => {
                     {(selectedMatch.ms || '').toLowerCase() === 'live' || (matchFilter === 'live') ? 'LIVE NOW' :
                      selectedMatch.matchEnded || (selectedMatch.ms || '').toLowerCase() === 'result' ? 'RESULT' : 'SCHEDULED'}
                   </span>
+
+                  {/* Feature 6: Share Button */}
+                  <button
+                    onClick={() => setShowShareModal(true)}
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors ml-1"
+                    title="Share match summary"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
@@ -696,8 +820,43 @@ const LiveScores = () => {
 
                 </div>
 
+                {/* Feature 3: Broadcast-Grade Live Win Probability & Momentum Bar */}
+                {winProbability && (
+                  <div className="mt-6 pt-5 border-t border-slate-100">
+                    <div className="flex items-center justify-between text-xs font-bold mb-2">
+                      <span className="flex items-center gap-1.5 text-emerald-700">
+                        <Flame className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{t1.name} ({winProbability.team1}%)</span>
+                      </span>
+
+                      <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                        {winProbability.leader}
+                      </span>
+
+                      <span className="flex items-center gap-1.5 text-blue-700">
+                        <span>({winProbability.team2}%) {t2.name}</span>
+                        <Target className="w-3.5 h-3.5 text-blue-600" />
+                      </span>
+                    </div>
+
+                    {/* Gradient Meter Bar */}
+                    <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden flex shadow-inner">
+                      <div
+                        className="bg-emerald-500 transition-all duration-700 ease-out"
+                        style={{ width: `${winProbability.team1}%` }}
+                        title={`${t1.name} win probability: ${winProbability.team1}%`}
+                      />
+                      <div
+                        className="bg-blue-600 transition-all duration-700 ease-out"
+                        style={{ width: `${winProbability.team2}%` }}
+                        title={`${t2.name} win probability: ${winProbability.team2}%`}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Match Status Summary Ribbon */}
-                <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3 bg-slate-50 border border-slate-200/80 px-4 py-3 rounded-2xl flex-1">
                     <Activity className="w-5 h-5 text-emerald-600 shrink-0" />
                     <div>
@@ -748,6 +907,19 @@ const LiveScores = () => {
                   </button>
 
                   <button
+                    id="tab-live-commentary"
+                    onClick={() => setDetailTab('commentary')}
+                    className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 ${
+                      detailTab === 'commentary'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>🎙️ Live Commentary</span>
+                  </button>
+
+                  <button
                     id="tab-match-stats"
                     onClick={() => setDetailTab('stats')}
                     className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 ${
@@ -783,13 +955,13 @@ const LiveScores = () => {
                     }`}
                   >
                     <Layers className="w-3.5 h-3.5" />
-                    <span>All Matches Directory ({currentTabMatches.length})</span>
+                    <span>All Matches ({currentTabMatches.length})</span>
                   </button>
                 </div>
               </div>
 
               {/* -------------------------------------------------------- */}
-              {/* SUB-VIEW 1: DETAILED SCOREBOARD (Batting, Bowling, Extras) */}
+              {/* SUB-VIEW 1: DETAILED SCOREBOARD + FEATURE 7 POTM SPOTLIGHT */}
               {/* -------------------------------------------------------- */}
               {detailTab === 'scorecard' && (
                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-5 sm:p-7 space-y-6">
@@ -1000,11 +1172,143 @@ const LiveScores = () => {
                     );
                   })()}
 
+                  {/* Feature 7: Key Performers Spotlight Card */}
+                  {keyPerformers && (
+                    <div className="mt-8 pt-6 border-t border-slate-100">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Award className="w-5 h-5 text-amber-500" />
+                        <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                          Key Performers & Player of the Match Spotlight
+                        </h4>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        
+                        {/* Player of the Match Candidate */}
+                        {keyPerformers.playerOfTheMatch && (
+                          <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 shadow-xs relative overflow-hidden">
+                            <span className="absolute top-3 right-3 text-[10px] font-black uppercase tracking-wider bg-amber-500 text-slate-950 px-2 py-0.5 rounded-full">
+                              POTM Candidate
+                            </span>
+                            <div className="text-[10px] font-bold text-amber-800 uppercase">Impact Performer</div>
+                            <h5 className="text-base font-black text-slate-900 mt-1">{keyPerformers.playerOfTheMatch.name}</h5>
+                            <div className="text-xs font-bold text-slate-700 mt-2">{keyPerformers.playerOfTheMatch.stat}</div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">{keyPerformers.playerOfTheMatch.subStat}</div>
+                          </div>
+                        )}
+
+                        {/* Top Batter */}
+                        {keyPerformers.topBatter && (
+                          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 shadow-xs">
+                            <div className="text-[10px] font-bold text-emerald-700 uppercase">Top Batter</div>
+                            <h5 className="text-base font-black text-slate-900 mt-1">{keyPerformers.topBatter.name}</h5>
+                            <div className="text-xs font-bold text-slate-700 mt-2">
+                              {keyPerformers.topBatter.runs} runs ({keyPerformers.topBatter.balls} balls)
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              {keyPerformers.topBatter.fours}x4 • {keyPerformers.topBatter.sixes}x6 • SR: {keyPerformers.topBatter.sr}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Top Bowler */}
+                        {keyPerformers.topBowler && (
+                          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 shadow-xs">
+                            <div className="text-[10px] font-bold text-blue-700 uppercase">Top Bowler</div>
+                            <h5 className="text-base font-black text-slate-900 mt-1">{keyPerformers.topBowler.name}</h5>
+                            <div className="text-xs font-bold text-slate-700 mt-2">
+                              {keyPerformers.topBowler.wickets} wickets for {keyPerformers.topBowler.runs} runs
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              {keyPerformers.topBowler.overs} overs • Economy: {keyPerformers.topBowler.economy}
+                            </div>
+                          </div>
+                        )}
+
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               )}
 
               {/* -------------------------------------------------------- */}
-              {/* SUB-VIEW 2: MATCH STATS & ANALYTICS */}
+              {/* SUB-VIEW 2: FEATURE 4 BALL-BY-BALL COMMENTARY STREAM */}
+              {/* -------------------------------------------------------- */}
+              {detailTab === 'commentary' && (
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-5 sm:p-7 space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div>
+                      <h4 className="text-base font-extrabold text-slate-900">
+                        🎙️ Ball-by-Ball Match Commentary Stream
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        Over-by-over narrative highlights, wickets, and boundary calls.
+                      </p>
+                    </div>
+
+                    {/* Filter Pills */}
+                    <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+                      <button
+                        onClick={() => setCommentaryFilter('all')}
+                        className={`px-3 py-1 rounded-lg transition-all ${
+                          commentaryFilter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                        }`}
+                      >
+                        All Balls
+                      </button>
+                      <button
+                        onClick={() => setCommentaryFilter('wicket')}
+                        className={`px-3 py-1 rounded-lg transition-all ${
+                          commentaryFilter === 'wicket' ? 'bg-white text-rose-700 shadow-xs' : 'text-slate-600'
+                        }`}
+                      >
+                        Wickets Only
+                      </button>
+                      <button
+                        onClick={() => setCommentaryFilter('boundary')}
+                        className={`px-3 py-1 rounded-lg transition-all ${
+                          commentaryFilter === 'boundary' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-600'
+                        }`}
+                      >
+                        Boundaries Only
+                      </button>
+                    </div>
+                  </div>
+
+                  {commentaryList.length === 0 ? (
+                    <div className="py-12 text-center text-slate-400 text-xs">
+                      No commentary entries matching this filter.
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100 space-y-1">
+                      {commentaryList.map((comm) => (
+                        <div key={comm.id} className="pt-3.5 pb-2.5 flex items-start gap-3.5 sm:gap-4 hover:bg-slate-50/50 p-2 rounded-xl transition-colors">
+                          <span className="font-mono text-xs font-extrabold text-slate-700 bg-slate-100 px-2 py-1 rounded-md shrink-0">
+                            {comm.over} ov
+                          </span>
+
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider shrink-0 ${comm.badgeColor}`}>
+                            {comm.ballType}
+                          </span>
+
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm text-slate-800 font-medium leading-relaxed">
+                              {comm.text}
+                            </p>
+                            <span className="text-[10px] text-slate-400 font-mono mt-1 block">
+                              Score: {comm.score}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* -------------------------------------------------------- */}
+              {/* SUB-VIEW 3: MATCH STATS & ANALYTICS */}
               {/* -------------------------------------------------------- */}
               {detailTab === 'stats' && (
                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 sm:p-8 space-y-6">
@@ -1098,7 +1402,7 @@ const LiveScores = () => {
               )}
 
               {/* -------------------------------------------------------- */}
-              {/* SUB-VIEW 3: MATCH INFO & VENUE */}
+              {/* SUB-VIEW 4: MATCH INFO & VENUE */}
               {/* -------------------------------------------------------- */}
               {detailTab === 'info' && (
                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 sm:p-8 space-y-5">
@@ -1136,7 +1440,7 @@ const LiveScores = () => {
               )}
 
               {/* -------------------------------------------------------- */}
-              {/* SUB-VIEW 4: ALL MATCHES DIRECTORY */}
+              {/* SUB-VIEW 5: ALL MATCHES DIRECTORY */}
               {/* -------------------------------------------------------- */}
               {detailTab === 'directory' && (
                 <div className="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-5 sm:p-6 space-y-5">
@@ -1146,7 +1450,7 @@ const LiveScores = () => {
                         {matchFilter === 'live' ? 'Currently Live Matches' : matchFilter === 'recent' ? 'Recent Results' : 'Upcoming Fixtures'}
                       </h3>
                       <p className="text-xs text-slate-500">
-                        Click any fixture below to load its full scorecard into the Hero card above.
+                        Click any fixture below to load its full scorecard and commentary above.
                       </p>
                     </div>
 
@@ -1357,6 +1661,64 @@ const LiveScores = () => {
 
           </div>
 
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* 7. FEATURE 6: SHARE MATCH MODAL */}
+      {/* ============================================================== */}
+      {showShareModal && selectedMatch && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Share2 className="w-4 h-4 text-emerald-600" />
+                <h4 className="text-base font-extrabold text-slate-900">Share Match Scorecard</h4>
+              </div>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="w-7 h-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Scorecard Preview Box */}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/90 font-mono text-xs text-slate-700 whitespace-pre-line leading-relaxed">
+              {shareText}
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={copyToClipboard}
+                className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2"
+              >
+                {copiedNotification ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedNotification ? 'Copied!' : 'Copy Summary'}</span>
+              </button>
+
+              <a
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 text-center"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>WhatsApp</span>
+              </a>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Floating Copied Toast */}
+      {copiedNotification && (
+        <div className="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-2.5 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-2.5 text-xs font-bold z-50 animate-bounce">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>Match scorecard copied to clipboard!</span>
         </div>
       )}
 
