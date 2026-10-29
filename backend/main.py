@@ -33,10 +33,4 @@ app.include_router(players.router, prefix="/api/players")
 
 if __name__ == "__main__":
     import uvicorn
-<<<<<<< HEAD
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
-
-=======
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
->>>>>>> myBranch

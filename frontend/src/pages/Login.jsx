@@ -4,7 +4,6 @@ import { Mail, Lock, Shield, Radio, ArrowRight, Eye, EyeOff, AlertCircle, CheckC
 import { CDMSLogo } from '../components/TeamLogos';
 import { api } from '../lib/api';
 import batsmanStadiumImg from '../assets/images/batsman-stadium.jpg';
-import api from '../lib/api';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -71,29 +70,6 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-<<<<<<< HEAD
-      const authRes = await api.auth.login(email, password);
-      setIsLoading(false);
-
-      const userData = {
-        email: authRes.user.email,
-        role: authRes.user.role,
-        name: authRes.user.name,
-        token: authRes.access_token,
-      };
-      localStorage.setItem('cdms_auth_user', JSON.stringify(userData));
-
-      if (authRes.user.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        try {
-          const allMatches = await api.matches.getAll();
-          if (allMatches && allMatches.length > 0) {
-            navigate(`/scorer/console/${allMatches[0].match_id}`);
-            return;
-          }
-        } catch (_) {}
-=======
       let response;
       
       if (isLogin) {
@@ -113,34 +89,14 @@ export default function Login() {
       if (userRole === 'admin') {
         navigate('/admin/dashboard');
       } else if (userRole === 'scorer') {
->>>>>>> myBranch
         navigate('/scorer/console/1');
       } else {
         // Regular user - redirect to home
         navigate('/');
       }
-<<<<<<< HEAD
-    } catch (apiErr) {
-      // If server error or invalid credentials, try demo fallback if it matches demo credentials
-      if (email.includes('admin') || role === 'admin') {
-        setIsLoading(false);
-        const userData = {
-          email,
-          role: 'admin',
-          name: 'Administrator',
-          token: 'cdms_bearer_token_' + Date.now(),
-        };
-        localStorage.setItem('cdms_auth_user', JSON.stringify(userData));
-        navigate('/admin/dashboard');
-      } else {
-        setIsLoading(false);
-        setError(apiErr.message || 'Invalid email or password');
-      }
-=======
     } catch (err) {
       setIsLoading(false);
       setError(err.message || isLogin ? 'Invalid email or password' : 'Registration failed');
->>>>>>> myBranch
     }
   };
 
