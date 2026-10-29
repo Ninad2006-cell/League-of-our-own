@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List, Dict, Any, Optional
-from supabase_client import get_supabase_client
-from app.auth import require_admin
+from app.supabase_client import get_supabase_admin
+from app.auth import require_admin, UserResponse
 from app.schemas.admin import (
     TournamentCreate,
     TeamCreate,
@@ -15,18 +15,21 @@ router = APIRouter(tags=["Administrator"])
 
 
 @router.post("/tournaments", status_code=status.HTTP_201_CREATED)
-def create_tournament(req: TournamentCreate, admin: dict = Depends(require_admin)):
+def create_tournament(req: TournamentCreate, admin: UserResponse = Depends(require_admin)):
     """
     Creates a new tournament in the database.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin()
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not available.")
+    
     data = {
         "name": req.name.strip(),
         "level": req.level,
         "format": req.format,
         "start_date": str(req.start_date),
         "end_date": str(req.end_date),
-        "created_by": admin.get("user_id")
+        "created_by": admin.user_id
     }
     res = supabase.table("tournaments").insert(data).execute()
     if not res.data:
@@ -35,11 +38,14 @@ def create_tournament(req: TournamentCreate, admin: dict = Depends(require_admin
 
 
 @router.post("/teams", status_code=status.HTTP_201_CREATED)
-def create_team(req: TeamCreate, admin: dict = Depends(require_admin)):
+def create_team(req: TeamCreate, admin: UserResponse = Depends(require_admin)):
     """
     Registers a new team.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin()
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not available.")
+    
     data = {
         "team_name": req.team_name.strip(),
         "city": req.city.strip(),
@@ -52,11 +58,14 @@ def create_team(req: TeamCreate, admin: dict = Depends(require_admin)):
 
 
 @router.post("/players", status_code=status.HTTP_201_CREATED)
-def create_player(req: PlayerCreate, admin: dict = Depends(require_admin)):
+def create_player(req: PlayerCreate, admin: UserResponse = Depends(require_admin)):
     """
     Adds a new player and initializes their stats table entry.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin()
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not available.")
+    
     data = {
         "name": req.name.strip(),
         "team_id": req.team_id,
@@ -90,11 +99,14 @@ def create_player(req: PlayerCreate, admin: dict = Depends(require_admin)):
 
 
 @router.post("/venues", status_code=status.HTTP_201_CREATED)
-def create_venue(req: VenueCreate, admin: dict = Depends(require_admin)):
+def create_venue(req: VenueCreate, admin: UserResponse = Depends(require_admin)):
     """
     Adds a cricket venue / stadium.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin()
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not available.")
+    
     data = {
         "venue_name": req.venue_name.strip(),
         "city": req.city.strip(),
@@ -107,11 +119,14 @@ def create_venue(req: VenueCreate, admin: dict = Depends(require_admin)):
 
 
 @router.post("/matches", status_code=status.HTTP_201_CREATED)
-def schedule_match(req: MatchCreate, admin: dict = Depends(require_admin)):
+def schedule_match(req: MatchCreate, admin: UserResponse = Depends(require_admin)):
     """
     Schedules a match fixture with assigned scorer.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin()
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not available.")
+    
     data = {
         "tournament_id": req.tournament_id,
         "team1_id": req.team1_id,
@@ -129,21 +144,27 @@ def schedule_match(req: MatchCreate, admin: dict = Depends(require_admin)):
 
 
 @router.get("/scorers")
-def list_available_scorers(admin: dict = Depends(require_admin)):
+def list_available_scorers(admin: UserResponse = Depends(require_admin)):
     """
     Lists all registered users with role 'scorer' or 'admin' eligible for match assignment.
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin()
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not available.")
+    
     res = supabase.table("users").select("user_id, name, email, role").in_("role", ["scorer", "admin"]).execute()
     return res.data or []
 
 
 @router.patch("/users/{user_id}/role")
-def update_user_role(user_id: str, req: RoleUpdateRequest, admin: dict = Depends(require_admin)):
+def update_user_role(user_id: str, req: RoleUpdateRequest, admin: UserResponse = Depends(require_admin)):
     """
     Promotes or updates a user's role (user, scorer, admin).
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase_admin()
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database connection not available.")
+    
     res = supabase.table("users").update({"role": req.role}).eq("user_id", user_id).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="User not found or update failed.")

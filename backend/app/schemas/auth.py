@@ -1,33 +1,34 @@
-from pydantic import BaseModel, Field
-from typing import Optional, Literal
-from datetime import datetime
 
+from pydantic import BaseModel, EmailStr
+from typing import Optional
+from enum import Enum
 
-class UserRegisterRequest(BaseModel):
-    name: str = Field(..., min_length=2, max_length=100)
-    email: str = Field(..., pattern=r"^[^@]+@[^@]+\.[^@]+$")
-    password: str = Field(..., min_length=6, max_length=100)
-    role: Optional[Literal["user", "scorer", "admin"]] = "user"
+class UserRole(str, Enum):
+    user = "user"
+    scorer = "scorer"
+    admin = "admin"
 
-
-class UserLoginRequest(BaseModel):
-    email: str = Field(..., pattern=r"^[^@]+@[^@]+\.[^@]+$")
+class UserRegister(BaseModel):
+    name: str
+    email: EmailStr
     password: str
+    role: Optional[UserRole] = UserRole.user
 
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
 
 class UserResponse(BaseModel):
     user_id: str
     name: str
     email: str
-    role: str
-    created_at: Optional[str] = None
-
+    role: UserRole
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
 
-
 class RoleUpdateRequest(BaseModel):
-    role: Literal["user", "scorer", "admin"]
+    role: UserRole
+

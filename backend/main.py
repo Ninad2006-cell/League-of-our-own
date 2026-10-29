@@ -8,33 +8,7 @@ if _venv_site.exists() and str(_venv_site) not in sys.path:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-app = FastAPI(
-    title="League Of Our Own API",
-    description="API for managing league cricket data, live scoring, and administration",
-    version="1.0.0"
-)
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.get("/")
-def read_root():
-    return {
-        "message": "League Of Our Own API",
-        "version": "1.0.0",
-        "status": "running"
-    }
-
-@app.get("/health")
-def health_check():
-    return {"status": "healthy"}
+from app.main import app
 
 # Track 1 Routers: Auth & Admin
 from app.routers import auth, admin
@@ -59,6 +33,10 @@ app.include_router(players.router, prefix="/api/players")
 
 if __name__ == "__main__":
     import uvicorn
+<<<<<<< HEAD
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 
+=======
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+>>>>>>> myBranch
