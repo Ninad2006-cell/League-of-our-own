@@ -108,3 +108,11 @@ API documentation will be available at `http://localhost:8000/docs`
 - PostgreSQL for database
 - WebSocket for real-time updates
 - JWT for authentication
+
+### Testing
+
+```bash
+cd backend
+venv\Scripts\activate
+pytest tests/test_basis_path.py -v
+```
